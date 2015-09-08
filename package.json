@@ -1,0 +1,22 @@
+{
+  "name": "fish-lib-ls",
+  "version": "0.1.0",
+  "description": "Useful stuff for writing in LiveScript",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/misterfish/fish-lib-ls.git"
+  },
+  "author": {
+    "name": "Allen Haim",
+    "email": "allen@netherrealm.net"
+  },
+  "license": "GPL-2.0",
+  "dependencies": {
+    "glob-fs": "^0.1.6",
+    "nopt": "^3.0.3",
+    "prelude-ls": "^1.1.2",
+    "shell-quote": "^1.4.3",
+    "sprintf": "^0.1.5"
+  }
+}
