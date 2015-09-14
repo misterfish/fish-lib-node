@@ -550,7 +550,7 @@ function sysdo {
         parse = shell-parse cmd # split into shell words
         parsed-bin = parse.shift()
         parsed-args = []
-        parse = parse |> map ->
+        parse |> each ->
             if is-obj it
                 # ls 'a*' -> { op: 'glob', glob: 'a*' }
                 if it.op is 'glob'
@@ -558,11 +558,12 @@ function sysdo {
                         # can emit ugly error XX
                         glob-fs().readdirSync that |> each (-> parsed-args.push it)
                     else
-                        warn "Can't deal with parsed arg:" it
-                        return []
+                        return iwarn "Can't deal with parsed arg:" it
                 else
-                    warn "Can't deal with parsed arg:" it
-                    return []
+                    if it.op?
+                        parsed-args.push that
+                    else
+                        return iwarn "Can't deal with parsed arg:" it
             else
                 parsed-args.push it
         [parsed-bin, parsed-args ++ args]

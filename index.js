@@ -636,7 +636,7 @@
       parse = shellParse(cmd);
       parsedBin = parse.shift();
       parsedArgs = [];
-      parse = map(function(it){
+      each(function(it){
         var that;
         if (isObj(it)) {
           if (it.op === 'glob') {
@@ -646,12 +646,14 @@
               })(
               globFs().readdirSync(that));
             } else {
-              warn("Can't deal with parsed arg:", it);
-              return [];
+              return iwarn("Can't deal with parsed arg:", it);
             }
           } else {
-            warn("Can't deal with parsed arg:", it);
-            return [];
+            if ((that = it.op) != null) {
+              return parsedArgs.push(that);
+            } else {
+              return iwarn("Can't deal with parsed arg:", it);
+            }
           }
         } else {
           return parsedArgs.push(it);
