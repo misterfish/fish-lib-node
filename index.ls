@@ -15,8 +15,8 @@ shell-quote-module = require 'shell-quote'
 sprintf = require 'sprintf'
 
 # required when needed.
-util = void
-glob-fs = void
+# util = void
+# glob-fs = void
 
 BULLETS = <[ ꣐ ⩕ ٭ ᳅ 𝄢 𝄓 𝄋 𝁐 ᨁ  ]>
 
@@ -526,7 +526,7 @@ function sysdo {
     keep-trailing-newline = Sys.keep-trailing-newline
 }
 
-    glob-fs := glob-fs ? require 'glob-fs'
+    global.glob-fs = require 'glob-fs' unless global.glob-fs?
 
     syserror-fired = false
 
@@ -554,7 +554,6 @@ function sysdo {
             if is-obj it
                 # ls 'a*' -> { op: 'glob', glob: 'a*' }
                 if it.op is 'glob'
-                    log 'yes' it
                     if it.pattern?
                         # can emit ugly error XX
                         glob-fs().readdirSync that |> each (-> parsed-args.push it)
@@ -772,7 +771,7 @@ function icomplain1 ...msg
  * All error and warn functions route through this underlying one.
  */
 function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
-    util := require 'util' unless util?
+    global.util := require 'util' unless global.util?
 
     stack-trace ?= Err.stack-trace
     stack = (new Error).stack
