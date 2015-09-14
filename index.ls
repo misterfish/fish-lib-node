@@ -13,8 +13,10 @@ child-process = require 'child_process'
 { curry, join, last, map, each, compact, keys, values } = require "prelude-ls"
 shell-quote-module = require 'shell-quote'
 sprintf = require 'sprintf'
-#glob-fs = require 'glob-fs'
-glob-fs = void # required when needed
+
+# required when needed.
+util = void
+glob-fs = void
 
 BULLETS = <[ ꣐ ⩕ ٭ ᳅ 𝄢 𝄓 𝄋 𝁐 ᨁ  ]>
 
@@ -770,6 +772,8 @@ function icomplain1 ...msg
  * All error and warn functions route through this underlying one.
  */
 function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
+    util := require 'util' unless util?
+
     stack-trace ?= Err.stack-trace
     stack = (new Error).stack
     # Some environments (e.g. phantomjs) don't give us a stack.
@@ -791,6 +795,10 @@ function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
             [void, m[1], m[2]]
         else
             ["«unknown-file»", "«unknown-line»"]
+
+    msg = map do
+        -> if is-obj it then util.inspect it else it
+        msg
 
     if internal
         if error

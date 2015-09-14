@@ -9,11 +9,12 @@
  * Author: Allen Haim <allen@netherrealm.net>
  */
 (function(){
-  var childProcess, ref$, curry, join, last, map, each, compact, keys, values, shellQuoteModule, sprintf, globFs, BULLETS, Identifier, Sys, Err, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, _, ident, k, v, slice$ = [].slice, toString$ = {}.toString, split$ = ''.split;
+  var childProcess, ref$, curry, join, last, map, each, compact, keys, values, shellQuoteModule, sprintf, util, globFs, BULLETS, Identifier, Sys, Err, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, _, ident, k, v, slice$ = [].slice, toString$ = {}.toString, split$ = ''.split;
   childProcess = require('child_process');
   ref$ = require("prelude-ls"), curry = ref$.curry, join = ref$.join, last = ref$.last, map = ref$.map, each = ref$.each, compact = ref$.compact, keys = ref$.keys, values = ref$.values;
   shellQuoteModule = require('shell-quote');
   sprintf = require('sprintf');
+  util = void 8;
   globFs = void 8;
   BULLETS = ['꣐', '⩕', '٭', '᳅', '𝄢', '𝄓', '𝄋', '𝁐', 'ᨁ'];
   Identifier = {
@@ -878,6 +879,9 @@
   function pcomplain(arg$){
     var msg, internal, error, stackTrace, code, stackRewind, ref$, stack, funcname, filename, lineNum, bulletColor;
     msg = arg$.msg, internal = arg$.internal, error = arg$.error, stackTrace = arg$.stackTrace, code = arg$.code, stackRewind = (ref$ = arg$.stackRewind) != null ? ref$ : 0;
+    if (util == null) {
+      util = require('util');
+    }
     stackTrace == null && (stackTrace = Err.stackTrace);
     stack = (new Error).stack;
     if (stack == null) {
@@ -896,6 +900,13 @@
         return ["«unknown-file»", "«unknown-line»"];
       }
     }(), funcname = ref$[0], filename = ref$[1], lineNum = ref$[2];
+    msg = map(function(it){
+      if (isObj(it)) {
+        return util.inspect(it);
+      } else {
+        return it;
+      }
+    }, msg);
     if (internal) {
       if (error) {
         msg.unshift("Internal error:");
