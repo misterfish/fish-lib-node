@@ -13,7 +13,8 @@ child-process = require 'child_process'
 { curry, join, last, map, each, compact, keys, values } = require "prelude-ls"
 shell-quote-module = require 'shell-quote'
 sprintf = require 'sprintf'
-glob-fs = require 'glob-fs'
+#glob-fs = require 'glob-fs'
+glob-fs = void # required when needed
 
 BULLETS = <[ ꣐ ⩕ ٭ ᳅ 𝄢 𝄓 𝄋 𝁐 ᨁ  ]>
 
@@ -522,6 +523,8 @@ function sysdo {
     ignore-node-syserr = Sys.ignore-node-syserr
     keep-trailing-newline = Sys.keep-trailing-newline
 }
+
+    glob-fs := glob-fs ? require 'glob-fs'
 
     syserror-fired = false
 

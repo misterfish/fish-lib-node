@@ -14,7 +14,7 @@
   ref$ = require("prelude-ls"), curry = ref$.curry, join = ref$.join, last = ref$.last, map = ref$.map, each = ref$.each, compact = ref$.compact, keys = ref$.keys, values = ref$.values;
   shellQuoteModule = require('shell-quote');
   sprintf = require('sprintf');
-  globFs = require('glob-fs');
+  globFs = void 8;
   BULLETS = ['꣐', '⩕', '٭', '᳅', '𝄢', '𝄓', '𝄋', '𝁐', 'ᨁ'];
   Identifier = {
     main: {},
@@ -604,6 +604,9 @@
       : Sys.ignoreNodeSyserr, keepTrailingNewline = (ref$ = arg$.keepTrailingNewline) != null
       ? ref$
       : Sys.keepTrailingNewline;
+    globFs = globFs != null
+      ? globFs
+      : require('glob-fs');
     syserrorFired = false;
     streamData = {};
     if (outList) {
