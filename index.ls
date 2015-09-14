@@ -13,8 +13,7 @@ child-process = require 'child_process'
 { curry, join, last, map, each, compact, keys, values } = require "prelude-ls"
 shell-quote-module = require 'shell-quote'
 sprintf = require 'sprintf'
-#glob-fs = require 'glob-fs'
-glob-fs = void # required when needed
+glob-fs = require 'glob-fs'
 
 BULLETS = <[ ꣐ ⩕ ٭ ᳅ 𝄢 𝄓 𝄋 𝁐 ᨁ  ]>
 
@@ -524,8 +523,6 @@ function sysdo {
     keep-trailing-newline = Sys.keep-trailing-newline
 }
 
-    glob-fs := glob-fs ? require 'glob-fs'
-
     syserror-fired = false
 
     stream-data = {}
@@ -557,10 +554,10 @@ function sysdo {
                         # can emit ugly error XX
                         glob-fs().readdirSync that |> each (-> parsed-args.push it)
                     else
-                        war "Can't deal with parsed arg:" it
+                        warn "Can't deal with parsed arg:" it
                         return []
                 else
-                    war "Can't deal with parsed arg:" it
+                    warn "Can't deal with parsed arg:" it
                     return []
             else
                 parsed-args.push it
