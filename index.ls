@@ -554,10 +554,10 @@ function sysdo {
                         # can emit ugly error XX
                         glob-fs().readdirSync that |> each (-> parsed-args.push it)
                     else
-                        war "Can't deal with parsed arg:" it
+                        warn "Can't deal with parsed arg:" it
                         return []
                 else
-                    war "Can't deal with parsed arg:" it
+                    warn "Can't deal with parsed arg:" it
                     return []
             else
                 parsed-args.push it
