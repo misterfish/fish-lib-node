@@ -1,6 +1,6 @@
 {
   "name": "fish-lib-ls",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Useful stuff for writing in LiveScript",
   "main": "index.js",
   "repository": {
