@@ -25,6 +25,7 @@
     die: false,
     verbose: true,
     quiet: false,
+    quietOnExit: false,
     sync: false,
     errCapture: false,
     outCapture: true,
@@ -276,9 +277,15 @@
    * cmd can be 'ls -t /tmp', or cmd can be 'ls' and args can be 
    * <[ -t tmp ]>, or cmd can even be 'ls -t' and args can be ['/tmp'].
    *
-   * 'quiet' is useful for commands like find, which return
-   * non-zero if there were any warnings, but we don't want a warning or
-   * error. quiet mixed with die will be ignored.
+   * If the command fails completely or dies on a signal, we print an error,
+   * unless 'quiet' was given.
+   *
+   * 'quiet' mixed with 'die' will be ignored.
+   *
+   * 'quiet' implies 'quiet-on-exit', 
+   * 
+   * 'quiet-on-exit' is useful for commands like find, which return non-zero
+   * if there were any warnings, but we don't want a warning or error printed.
    *
    * Return the spawn object in all cases.
    */
@@ -582,7 +589,7 @@
     * @private
     */
   function sysdo(arg$){
-    var cmd, oncomplete, args, ref$, die, verbose, quiet, sync, outCapture, errCapture, outList, errList, outIgnore, errIgnore, slurp, ignoreNodeSyserr, keepTrailingNewline, syserrorFired, streamData, opts, cmdBin, cmdArgs, spawned, streamConfig, handleDataAsList, handleData, thisError;
+    var cmd, oncomplete, args, ref$, die, verbose, quiet, quietOnExit, sync, outCapture, errCapture, outList, errList, outIgnore, errIgnore, slurp, ignoreNodeSyserr, keepTrailingNewline, syserrorFired, streamData, opts, cmdBin, cmdArgs, spawned, streamConfig, handleDataAsList, handleData, thisError;
     cmd = arg$.cmd, oncomplete = arg$.oncomplete, args = (ref$ = arg$.args) != null
       ? ref$
       : [], die = (ref$ = arg$.die) != null
@@ -591,7 +598,9 @@
       ? ref$
       : Sys.verbose, quiet = (ref$ = arg$.quiet) != null
       ? ref$
-      : Sys.quiet, sync = (ref$ = arg$.sync) != null
+      : Sys.quiet, quietOnExit = (ref$ = arg$.quietOnExit) != null
+      ? ref$
+      : Sys.quietOnExit, sync = (ref$ = arg$.sync) != null
       ? ref$
       : Sys.sync, outCapture = (ref$ = arg$.outCapture) != null
       ? ref$
@@ -605,6 +614,9 @@
       ? ref$
       : Sys.keepTrailingNewline;
     syserrorFired = false;
+    if (quiet) {
+      quietOnExit = true;
+    }
     streamData = {};
     if (outList) {
       streamData.out = [];
@@ -759,6 +771,7 @@
         oncomplete: oncomplete,
         die: die,
         quiet: quiet,
+        quietOnExit: quietOnExit,
         out: streamData.out,
         err: streamData.err
       }));
@@ -803,13 +816,13 @@
    * @private
    */
   function syserror(arg$){
-    var cmd, code, signal, oncomplete, out, err, die, quiet, strSig, strCmd, strExit, str;
-    cmd = arg$.cmd, code = arg$.code, signal = arg$.signal, oncomplete = arg$.oncomplete, out = arg$.out, err = arg$.err, die = arg$.die, quiet = arg$.quiet;
+    var cmd, code, signal, oncomplete, out, err, die, quiet, quietOnExit, strSig, strCmd, strExit, str;
+    cmd = arg$.cmd, code = arg$.code, signal = arg$.signal, oncomplete = arg$.oncomplete, out = arg$.out, err = arg$.err, die = arg$.die, quiet = arg$.quiet, quietOnExit = arg$.quietOnExit;
     if (signal) {
       strSig = " «got signal " + cyan(signal) + "»";
     }
     strCmd = " «" + brightRed(cmd) + "»";
-    if (code) {
+    if (code != null) {
       strExit = " «exit status " + yellow(code) + "»";
     }
     str = join('', compact(["Couldn't execute cmd", strCmd, strExit, strSig]));
@@ -817,8 +830,14 @@
       error(str);
       process.exit(code);
     } else {
-      if (!quiet) {
-        warn(str);
+      if (code != null) {
+        if (!quietOnExit) {
+          warn(str);
+        }
+      } else {
+        if (!quiet) {
+          warn(str);
+        }
       }
     }
     if (oncomplete != null) {

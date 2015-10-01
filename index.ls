@@ -26,6 +26,7 @@ Sys =
     die: false
     verbose: true
     quiet: false
+    quiet-on-exit: false
     sync: false
     err-capture: false
     out-capture: true
@@ -235,9 +236,15 @@ function sys-ok
  * cmd can be 'ls -t /tmp', or cmd can be 'ls' and args can be 
  * <[ -t tmp ]>, or cmd can even be 'ls -t' and args can be ['/tmp'].
  *
- * 'quiet' is useful for commands like find, which return
- * non-zero if there were any warnings, but we don't want a warning or
- * error. quiet mixed with die will be ignored.
+ * If the command fails completely or dies on a signal, we print an error,
+ * unless 'quiet' was given.
+ *
+ * 'quiet' mixed with 'die' will be ignored.
+ *
+ * 'quiet' implies 'quiet-on-exit', 
+ * 
+ * 'quiet-on-exit' is useful for commands like find, which return non-zero
+ * if there were any warnings, but we don't want a warning or error printed.
  *
  * Return the spawn object in all cases.
  */
@@ -513,7 +520,8 @@ function _color c, { warn-on-error } = {}
 
 function sysdo {
     cmd, oncomplete, args = []
-    die = Sys.die, verbose = Sys.verbose, quiet = Sys.quiet
+    die = Sys.die, verbose = Sys.verbose
+    quiet = Sys.quiet, quiet-on-exit = Sys.quiet-on-exit
     sync = Sys.sync
     out-capture = Sys.out-capture, err-capture = Sys.err-capture
     out-list = false, err-list = false
@@ -524,6 +532,8 @@ function sysdo {
 }
 
     syserror-fired = false
+
+    quiet-on-exit = true if quiet
 
     stream-data = {}
     # max length param XX
@@ -670,7 +680,7 @@ function sysdo {
     this-error = ->
         syserror merge-objects args, {
             cmd, oncomplete
-            die, quiet
+            die, quiet, quiet-on-exit
             out: stream-data.out
             err: stream-data.err
         }
@@ -683,7 +693,7 @@ function sysdo {
         # This is a very nodey message (e.g. spawn ENOENT)
         # If you're looking for something like 'bash: finderjsdf: command not found', forget it ... there is no shell spawned.
         # Maybe provide an opt to capture this error, but let the other one
-        # flow to stderr XX
+        # flow to stderr.
 
         errmsg = errobj.message
         if not ignore-node-syserr
@@ -713,12 +723,14 @@ function sysdo {
 /**
  * @private
  */
-function syserror ({ cmd, code, signal, oncomplete, out, err, die, quiet })
+function syserror ({ cmd, code, signal, oncomplete, out, err, die, quiet, quiet-on-exit })
     str-sig = " «got signal #{ cyan signal }»" if signal
     str-cmd = " «#{ bright-red cmd }»"
 
-    # code can be null, e.g. when exiting on signal.
-    str-exit = " «exit status #{ yellow code }»" if code
+    # code can be undefined, e.g. when exiting on signal, or when the command
+    # failed to even start.
+
+    str-exit = " «exit status #{ yellow code }»" if code?
 
     str = join '', compact [
         "Couldn't execute cmd"
@@ -731,7 +743,12 @@ function syserror ({ cmd, code, signal, oncomplete, out, err, die, quiet })
         error str
         process.exit code
     else
-        warn str unless quiet
+        # command started but ended badly
+        if code?
+            warn str unless quiet-on-exit
+        # command didn't start or ended on a signal
+        else
+            warn str unless quiet
 
     oncomplete { ok: false, code, out, err } if oncomplete?
 
