@@ -677,7 +677,7 @@ function sysdo {
     #
     # In both cases, call syserror, but make sure not to call it twice.
 
-    this-error = ->
+    this-error = (args) ->
         syserror merge-objects args, {
             cmd, oncomplete
             die, quiet, quiet-on-exit

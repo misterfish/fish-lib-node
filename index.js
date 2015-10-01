@@ -765,7 +765,7 @@
       });
     })(
     values(streamConfig));
-    thisError = function(){
+    thisError = function(args){
       return syserror(mergeObjects(args, {
         cmd: cmd,
         oncomplete: oncomplete,
