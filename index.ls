@@ -584,7 +584,6 @@ function sysdo {
             if is-obj it
                 # ls 'a*' -> { op: 'glob', glob: 'a*' }
                 if it.op is 'glob'
-                    log 'yes' it
                     if it.pattern?
                         # can emit ugly error XX
                         glob-fs().readdirSync that |> each (-> parsed-args.push it)
