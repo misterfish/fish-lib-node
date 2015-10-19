@@ -302,39 +302,52 @@ function sys
     sysdo opts
 
 function is-str
-    typeof! it is 'String'
+    is-string it
 
 function is-string
     typeof! it is 'String'
 
 function is-bool
-    typeof! it is 'Boolean'
+    is-boolean it
 
 function is-boolean
     typeof! it is 'Boolean'
 
 function is-obj
-    typeof! it is 'Object'
+    is-object it
 
 function is-object
     typeof! it is 'Object'
 
-function is-array
-    is-arr.apply this, arguments
-
 function is-arr
+    is-array it
+
+function is-array
     typeof! it is 'Array'
 
 function is-num
-    typeof! it is 'Number'
+    is-number it
 
+/*
+ * Checks the type of the argument, in the same way as is-str, is-arr, etc.
+ * Use is-a-number to test strings such as '3.1'.
+ *
+ * If it's a Number, returns an object with property 'nan' (alias 'is-nan')
+ * based on whether it's NaN (not a number).
+ * 
+ * Returns false otherwise.
+ */
 function is-number
-    typeof! it is 'Number'
+    return false unless typeof! it is 'Number'
+    nan = isNaN it
 
-function is-integer
-    is-num it and it == Math.floor it
+    nan: nan
+    is-nan: nan
 
 function is-int
+    is-integer it
+
+function is-integer
     is-num it and it == Math.floor it
 
 function is-positive-int
@@ -342,6 +355,18 @@ function is-positive-int
 
 function is-non-negative-int
     is-int it and it >= 0
+
+/*
+ * Also returns true if the argument is a string representing a number.
+ */
+function is-a-num
+    is-a-number it
+
+function is-a-number
+    if is-str it
+        it = +it
+        return false if isNaN it
+    is-num it
 
 /* 
  * a and b are integers.
@@ -863,7 +888,7 @@ Identifier.main = {
     err-set, iwarn, ierror, warn, error,
     icomplain, icomplain1,
     sys-set, sys, sys-ok,
-    getopt, sprintf
+    getopt, sprintf,
 }
 
 Identifier.color = {
@@ -877,7 +902,8 @@ Identifier.util = {
     shuffle,
     is-int, is-integer, is-positive-int, is-non-negative-int, is-num,
     is-number, is-array, is-arr, is-obj, is-object, is-str, is-string,
-    is-bool, is-boolean
+    is-bool, is-boolean,
+    is-a-num, is-a-number,
 }
 
 for _, ident of Identifier
