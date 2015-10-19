@@ -621,10 +621,10 @@
     * @private
     */
   function sysdo(arg$){
-    var cmd, oncomplete, args, ref$, die, verbose, quiet, quietOnExit, sync, outCapture, errCapture, outList, errList, outIgnore, errIgnore, slurp, ignoreNodeSyserr, keepTrailingNewline, syserrorFired, streamData, opts, cmdBin, cmdArgs, spawned, streamConfig, handleDataAsList, handleData, thisError;
+    var cmd, oncomplete, args, ref$, outList, errList, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outCapture, errCapture, slurp, ignoreNodeSyserr, keepTrailingNewline, syserrorFired, streamData, opts, cmdBin, cmdArgs, spawned, streamConfig, handleDataAsList, handleData, thisError;
     cmd = arg$.cmd, oncomplete = arg$.oncomplete, args = (ref$ = arg$.args) != null
       ? ref$
-      : [], die = (ref$ = arg$.die) != null
+      : [], outList = (ref$ = arg$.outList) != null ? ref$ : false, errList = (ref$ = arg$.errList) != null ? ref$ : false, outIgnore = (ref$ = arg$.outIgnore) != null ? ref$ : false, errIgnore = (ref$ = arg$.errIgnore) != null ? ref$ : false, die = (ref$ = arg$.die) != null
       ? ref$
       : Sys.die, verbose = (ref$ = arg$.verbose) != null
       ? ref$
@@ -638,7 +638,7 @@
       ? ref$
       : Sys.outCapture, errCapture = (ref$ = arg$.errCapture) != null
       ? ref$
-      : Sys.errCapture, outList = (ref$ = arg$.outList) != null ? ref$ : false, errList = (ref$ = arg$.errList) != null ? ref$ : false, outIgnore = (ref$ = arg$.outIgnore) != null ? ref$ : false, errIgnore = (ref$ = arg$.errIgnore) != null ? ref$ : false, slurp = (ref$ = arg$.slurp) != null
+      : Sys.errCapture, slurp = (ref$ = arg$.slurp) != null
       ? ref$
       : Sys.slurp, ignoreNodeSyserr = (ref$ = arg$.ignoreNodeSyserr) != null
       ? ref$
@@ -676,9 +676,10 @@
     ref$ = function(){
       var parse, parsedBin, parsedArgs;
       parse = shellParse(cmd);
+      log('parsed', parse);
       parsedBin = parse.shift();
       parsedArgs = [];
-      parse = map(function(it){
+      each(function(it){
         var that;
         if (isObj(it)) {
           if (it.op === 'glob') {
@@ -689,11 +690,9 @@
               globFs().readdirSync(that));
             } else {
               warn("Can't deal with parsed arg:", it);
-              return [];
             }
           } else {
             warn("Can't deal with parsed arg:", it);
-            return [];
           }
         } else {
           return parsedArgs.push(it);
@@ -704,12 +703,9 @@
     }(), cmdBin = ref$[0], cmdArgs = ref$[1];
     if (verbose) {
       (function(){
-        var args;
-        args = map(function(it){
-          return it;
-        }, cmdArgs);
-        args.unshift(cmdBin);
-        return log(green(bullet()) + " " + shellQuote(args));
+        var printCmd;
+        printCmd = join(' ', [cmd].concat(map(shellQuote, args)));
+        return log(green(bullet()) + " " + printCmd);
       })();
     }
     spawned = childProcess.spawn(cmdBin, cmdArgs, opts);

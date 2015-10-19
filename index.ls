@@ -544,17 +544,23 @@ function _color c, { warn-on-error } = {}
   */
 
 function sysdo {
-    cmd, oncomplete, args = []
-    die = Sys.die, verbose = Sys.verbose
-    quiet = Sys.quiet, quiet-on-exit = Sys.quiet-on-exit
-    sync = Sys.sync
-    out-capture = Sys.out-capture, err-capture = Sys.err-capture
-    out-list = false, err-list = false
-    out-ignore = false, err-ignore = false
-    slurp = Sys.slurp
-    ignore-node-syserr = Sys.ignore-node-syserr
-    keep-trailing-newline = Sys.keep-trailing-newline
-}
+    cmd, oncomplete, args = [],
+    out-list = false,
+    err-list = false,
+    out-ignore = false,
+    err-ignore = false,
+
+    die = Sys.die,
+    verbose = Sys.verbose,
+    quiet = Sys.quiet,
+    quiet-on-exit = Sys.quiet-on-exit,
+    sync = Sys.sync,
+    out-capture = Sys.out-capture,
+    err-capture = Sys.err-capture,
+    slurp = Sys.slurp,
+    ignore-node-syserr = Sys.ignore-node-syserr,
+    keep-trailing-newline = Sys.keep-trailing-newline,
+} # /sysdo args
 
     syserror-fired = false
 
@@ -575,12 +581,14 @@ function sysdo {
         out-capture = false
         err-capture = false
 
-    opts = {} # cwd, env, stdio, detached, uid, gid
+    opts = {} # cwd, env, stdio, detached, uid, gid (unused)
     [cmd-bin, cmd-args] = do ->
         parse = shell-parse cmd # split into shell words
+        log 'parsed' parse
+        # note that we don't expand globs in the first token.
         parsed-bin = parse.shift()
         parsed-args = []
-        parse = parse |> map ->
+        parse |> each ->
             if is-obj it
                 # ls 'a*' -> { op: 'glob', glob: 'a*' }
                 if it.op is 'glob'
@@ -589,19 +597,17 @@ function sysdo {
                         glob-fs().readdirSync that |> each (-> parsed-args.push it)
                     else
                         warn "Can't deal with parsed arg:" it
-                        return []
+                        return
                 else
                     warn "Can't deal with parsed arg:" it
-                    return []
+                    return
             else
                 parsed-args.push it
         [parsed-bin, parsed-args ++ args]
 
     if verbose then do ->
-        # and put it back together for verbose message.
-        args = map (-> it), cmd-args # clone
-        args.unshift cmd-bin
-        log "#{ green bullet! } #{ shell-quote args }"
+        print-cmd = join ' ', [cmd] ++ map (shell-quote), args
+        log "#{ green bullet! } #print-cmd"
 
     spawned = child-process.spawn cmd-bin, cmd-args, opts
 
