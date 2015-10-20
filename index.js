@@ -52,12 +52,12 @@
     return shellQuoteModule.parse.apply(this, arguments);
   }
   function shellQuote(arg){
-    if (isArray(arg)) {} else if (isStr(arg)) {
-      arg = [arg];
+    if (/[!$&*?()`<>|\s]/.exec(arg)) {
+      arg = arg.replace(/'/g, "'\\''");
+      return "'" + arg + "'";
     } else {
-      icomplain1('Bad call');
+      return arg;
     }
-    return shellQuoteModule.quote(arg);
   }
   function log(){
     var msg;

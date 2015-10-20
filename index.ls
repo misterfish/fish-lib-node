@@ -58,13 +58,13 @@ function shell-parse
     shell-quote-module.parse.apply this, arguments
 
 function shell-quote arg
-    if is-array arg
-        void
-    else if is-str arg
-        arg = [arg]
+    if arg == // [ ! $ & * ? ( ) ` < > | \s ] //
+        # replace every single quote (sq) with: sq + backslash + sq + sq, then
+        # surround the whole thing with sqs.
+        arg .= replace /'/g, "'\\''"
+        "'#arg'"
     else
-        icomplain1 'Bad call'
-    shell-quote-module.quote arg
+        arg
 
 function log ...msg
     console.log.apply console, msg
