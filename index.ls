@@ -13,7 +13,10 @@ child-process = require 'child_process'
 { curry, join, last, map, each, compact, keys, values } = require "prelude-ls"
 shell-quote-module = require 'shell-quote'
 sprintf = require 'sprintf'
-glob-fs = require 'glob-fs'
+
+# required when needed.
+# util = void
+# glob-fs = void
 
 BULLETS = <[ ꣐ ⩕ ٭ ᳅ 𝄢 𝄓 𝄋 𝁐 ᨁ  ]>
 
@@ -562,6 +565,8 @@ function sysdo {
     keep-trailing-newline = Sys.keep-trailing-newline,
 } # /sysdo args
 
+    global.glob-fs = require 'glob-fs' unless global.glob-fs?
+
     syserror-fired = false
 
     quiet-on-exit = true if quiet
@@ -584,7 +589,6 @@ function sysdo {
     opts = {} # cwd, env, stdio, detached, uid, gid (unused)
     [cmd-bin, cmd-args] = do ->
         parse = shell-parse cmd # split into shell words
-        log 'parsed' parse
         # note that we don't expand globs in the first token.
         parsed-bin = parse.shift()
         parsed-args = []
@@ -596,11 +600,12 @@ function sysdo {
                         # can emit ugly error XX
                         glob-fs().readdirSync that |> each (-> parsed-args.push it)
                     else
-                        warn "Can't deal with parsed arg:" it
-                        return
+                        return iwarn "Can't deal with parsed arg:" it
                 else
-                    warn "Can't deal with parsed arg:" it
-                    return
+                    if it.op?
+                        parsed-args.push that
+                    else
+                        return iwarn "Can't deal with parsed arg:" it
             else
                 parsed-args.push it
         [parsed-bin, parsed-args ++ args]
@@ -814,6 +819,8 @@ function icomplain1 ...msg
  * All error and warn functions route through this underlying one.
  */
 function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
+    global.util := require 'util' unless global.util?
+
     stack-trace ?= Err.stack-trace
     stack = (new Error).stack
     # Some environments (e.g. phantomjs) don't give us a stack.
@@ -835,6 +842,10 @@ function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
             [void, m[1], m[2]]
         else
             ["«unknown-file»", "«unknown-line»"]
+
+    msg = map do
+        -> if is-obj it then util.inspect it else it
+        msg
 
     if internal
         if error
