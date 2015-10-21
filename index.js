@@ -64,18 +64,15 @@
     msg = slice$.call(arguments);
     return console.log.apply(console, msg);
   }
-  /*
-  function logf ...msg
-      opts = msg.pop()
-      if typeof! opts is not 'Object' then
-          iwarn 'bad call'
-          return
-      newline = true unless opts.newline == false or opts.nl == false
-      if newline
-          log.apply this, msg # preferable because dumps deeper
-      else
-          process.stdout.write join ' ' msg
-  */
+  /**
+   *
+   * Usage: 
+   *
+   * iwarn 'string' [, 'string', ...,] {opts}
+   *
+   * opts is optional.
+   *
+   */
   function iwarn(){
     var msg, opts;
     msg = slice$.call(arguments);
@@ -234,47 +231,67 @@
     argsArray.push(opts);
     return sys.apply(this, argsArray);
   }
-  /*
-   * - - - 
+  /**
    *
+   * sys-exec and sys-spawn have almost exactly the same usage:
    *
-   * Usage:
+   * sys-xxx {opts}                                            # 1
+   * sys-xxx 'cmd'                                             # 2
+   * sys-xxx 'cmd', {opts}                                     # 3
+  
+   * sys-xxx 'cmd', [args]                                     # 4 (only spawn)
+   * sys-xxx 'cmd', [args], {opts}                             # 5 (only spawn)
+   * sys-xxx 'cmd', [args], oncomplete                         # 6 (only spawn)
+   * sys-xxx 'cmd', [args], {opts}, oncomplete                 # 7 (only spawn)
+  
+   * sys-xxx 'cmd', oncomplete                                 # 8
+   * sys-xxx 'cmd', {opts}, oncomplete                         # 9
+   * sys-xxx 'cmd', 'arg1', ... , oncomplete                   # 10
+   * sys-xxx 'cmd', 'arg1', ... , {opts}, oncomplete           # 11
+   * sys-xxx 'cmd', 'arg1', ...                                # 12
+   * sys-xxx 'cmd', 'arg1', ... , {opts}                       # 13
    *
-   * {opts} is always last and always optional.
-   *
-   * sys {opts}                                            # 1
-   * sys 'cmd', {opts}                                     # 2
-   * sys 'cmd', [args], {opts}                             # 3
-   * sys 'cmd', [args], oncomplete, {opts}                 # 4
-   * sys 'cmd', oncomplete, {opts}                         # 5
-   * sys 'cmd', 'arg1', ... , oncomplete, {opts}           # 6
-   * sys 'cmd', 'arg1', ... , {opts}                       # 7
-   *
-   * We use spawn instead of exec for better buffering control (exec can
-   * easily overflow and die).
-   *
-   * If oncomplete is given or opt 'sync' is false, use async. 
-   * sync is not possible without more recent nodes by the way.
-   *
-   * The spawn object is returned in all cases and the caller can do what
-   * they want with it. 
+   * Command strings and elements of [args] are joined on ' '.
    * 
+   * Quoting is handled very differently in the two cases.
+   *
+   * The ChildProcess object is returned in all cases and the caller can do
+   * what they want with it. 
+   *
+   * sys-exec:
+   *
+   * sys-exec uses child_process.exec and should be used for shell-style
+   * commands, e.g. 'ls | wc > out'
+   *
+   * Note that node will kill the child process if it emits too much data on
+   * stdout or stderr (see 'maxBuffer' below).
+   * 
+   * Almost all components not involving shell metacharacters (and anything
+   * user-supplied) should always be quoted, using shell-quote() for example.
+   * 
+   * Examples:
+   *
+   * sys-exec 'ls', shell-quote source-file, '| wc >', shell-quote out-file
+   * 
+   * sys-spawn:
+   *
+   * Is more powerful and robust, and node won't kill the child process.
+   * Use this if you don't need shell-style commands and want to control the
+   * streams.
+   *
+   * The first string is taken as the command binary and the rest of the
+   * arguments, whether strings or in the [args] array, are passed to the
+   * [args] param of child_process.spawn and are by definition safe
+   * ("quoted").
+   *
+   * options:
+   * 
+   * If oncomplete is given or opt 'sync' is false, calls will be asynchronous.
+   *
+   * (sync mode is currently not implemented).
+   *
    * oncomplete is for success and error both.
-   *    params: ok, code, out, err
-   *
-   * If out-ignore or err-ignore is true, those streams are not listened
-   * on. (Caller still can, though).
-   *
-   * Otherwise:
-   *
-   *  If out-capture/err-capture is true, read everything into a scalar/list (depending
-   *  on out-list/err-list) and pass it to oncomplete. If oncomplete is
-   *  nothing then capture-xxx are set to false.
-   *
-   *  If out-capture/err-capture is false, print to stdout/stderr.
-   *
-   * cmd can be 'ls -t /tmp', or cmd can be 'ls' and args can be 
-   * <[ -t tmp ]>, or cmd can even be 'ls -t' and args can be ['/tmp'].
+   * params: ok, code, out, err
    *
    * If the command fails completely or dies on a signal, we print an error,
    * unless 'quiet' was given.
@@ -286,53 +303,147 @@
    * 'quiet-on-exit' is useful for commands like find, which return non-zero
    * if there were any warnings, but we don't want a warning or error printed.
    *
-   * Return the spawn object in all cases.
+   * 'out-list' / 'err-list' mean split the output on '\n'. This is not a good
+   * idea if the output consists of filenames (because filenames can contain
+   * newlines).
+   *
+   * 'ignore-node-syserr': hide ugly error messages from node (e.g. spawn ENOENT).
+   *
+   * options (spawn only):
+   *
+   * If out-ignore or err-ignore is true, those streams are not listened
+   * on, though the caller is free to.
+   *
+   * Otherwise:
+   *
+   *  If out-capture/err-capture is true, read everything into a scalar/list (depending
+   *  on out-list/err-list) and pass it to oncomplete. If oncomplete is
+   *  nothing then xxx-capture are set to false.
+   *
+   *  If out-capture/err-capture is false, print to stdout/stderr.
+   *
+   * 'keep-trailing-newline': keep the trailing newline at the end of the streams.
+   *
+   * options (exec only):
+   *
+   * If out-capture/err-capture is true, pass the entire stdout and stderr as
+   * a scalar or a list (depending on out-list/err-list) to oncomplete.
+   *
+   * Otherwise, print to stdout/stderr.
+   *
+   * maxBuffer (bytes): node will kill the child process if stdout or stderr exceeds this size.
+   *                    default: not set, meaning use node's default (currently 200K).
+   */
+  /* Alias for sys-exec
    */
   function sys(){
-    var args, numArgs, opts, cmd, cmdArgs, oncomplete, argsArray;
-    args = arguments;
-    numArgs = arguments.length;
-    if (toString$.call(last(args)).slice(8, -1) !== 'Object') {
-      args[numArgs] = {};
-      args.length++;
-      return sys.apply(this, args);
+    return sysExec.apply(null, arguments);
+  }
+  function sysExec(){
+    var x$, argsArray, opts;
+    x$ = argsArray = [].slice.call(arguments);
+    x$.unshift('exec');
+    opts = sysProcessArgs.apply(null, argsArray);
+    return sysdoExec(opts);
+  }
+  function sysSpawn(){
+    var x$, argsArray, opts;
+    x$ = argsArray = [].slice.call(arguments);
+    x$.unshift('spawn');
+    opts = sysProcessArgs.apply(null, argsArray);
+    return sysdoSpawn(opts);
+  }
+  /**
+   * @private
+   */
+  function sysProcessArgs(){
+    var arg, type, numArgs, opts, cmd, args, oncomplete, argsArray, cmdArgs;
+    arg = [].slice.call(arguments);
+    type = arg.shift();
+    if (type !== 'exec' && type !== 'spawn') {
+      return ierror('bad call');
     }
-    if (numArgs === 1) {
-      opts = args[0];
-    } else if (numArgs === 2) {
-      cmd = args[0], opts = args[1];
+    numArgs = arg.length;
+    if (isArr(arg[1]) && type === 'exec') {
+      return ierror('This usage is not supported for exec mode');
+    }
+    if (numArgs === 1 && isObj(arg[0])) {
+      opts = arg[0];
+    } else if (numArgs === 1 && isStr(arg[0])) {
+      cmd = arg[0];
+      opts = {
+        cmd: cmd
+      };
+    } else if (numArgs === 2 && isObj(arg[1])) {
+      cmd = arg[0], opts = arg[1];
       opts.cmd = cmd;
-    } else if (numArgs === 3 && toString$.call(args[1]).slice(8, -1) === 'Array') {
-      cmd = args[0], cmdArgs = args[1], opts = args[2];
+    } else if (numArgs === 2 && isArr(arg[1])) {
+      cmd = arg[0], args = arg[1];
+      opts = {
+        cmd: cmd,
+        args: args
+      };
+    } else if (numArgs === 3 && isArr(arg[1]) && isObj(arg[2])) {
+      cmd = arg[0], args = arg[1], opts = arg[2];
       opts.cmd = cmd;
-      opts.args = cmdArgs;
-    } else if (numArgs === 4 && toString$.call(args[1]).slice(8, -1) === 'Array') {
-      cmd = args[0], cmdArgs = args[1], oncomplete = args[2], opts = args[3];
+      opts.args = args;
+    } else if (numArgs === 3 && isArr(arg[1]) && isFunc(arg[2])) {
+      cmd = arg[0], args = arg[1], oncomplete = arg[2];
+      opts = {
+        cmd: cmd,
+        args: args,
+        oncomplete: oncomplete
+      };
+    } else if (numArgs === 4 && isArr(arg[1])) {
+      cmd = arg[0], args = arg[1], opts = arg[2], oncomplete = arg[3];
       opts.cmd = cmd;
-      opts.args = cmdArgs;
+      opts.args = args;
       opts.oncomplete = oncomplete;
-    } else if (numArgs === 3 && toString$.call(args[1]).slice(8, -1) === 'Function') {
-      cmd = args[0], oncomplete = args[1], opts = args[2];
+    } else if (numArgs === 2 && isFunc(arg[1])) {
+      cmd = arg[0], oncomplete = arg[1];
+      opts = {
+        cmd: cmd,
+        oncomplete: oncomplete
+      };
+    } else if (numArgs === 3 && isObj(arg[1])) {
+      cmd = arg[0], opts = arg[1], oncomplete = arg[2];
       opts.cmd = cmd;
       opts.oncomplete = oncomplete;
-    } else if (numArgs >= 4 && toString$.call(args[numArgs - 2]).slice(8, -1) === 'Function') {
-      argsArray = [].slice.call(args);
-      opts = argsArray.pop();
+    } else if (numArgs >= 3 && isStr(arg[1])) {
+      argsArray = [].slice.call(arg);
       oncomplete = argsArray.pop();
-      cmd = argsArray[0], cmdArgs = slice$.call(argsArray, 1);
+      cmd = argsArray[0], args = slice$.call(argsArray, 1);
+      opts = {
+        cmd: cmd,
+        args: args,
+        oncomplete: oncomplete
+      };
+    } else if (numArgs >= 4 && isStr(arg[1])) {
+      argsArray = [].slice.call(arg);
+      oncomplete = argsArray.pop();
+      opts = argsArray.pop();
+      cmd = argsArray[0], args = slice$.call(argsArray, 1);
       opts.cmd = cmd;
-      opts.args = cmdArgs;
+      opts.args = args;
       opts.oncomplete = oncomplete;
+    } else if (numArgs >= 2 && isStr(arg[1])) {
+      argsArray = [].slice.call(arg);
+      cmd = argsArray[0], args = slice$.call(argsArray, 1);
+      opts = {
+        cmd: cmd,
+        args: args
+      };
     } else if (numArgs >= 3) {
-      argsArray = [].slice.call(args);
+      argsArray = [].slice.call(arg);
       opts = argsArray.pop();
       cmd = argsArray[0], cmdArgs = slice$.call(argsArray, 1);
       opts.cmd = cmd;
       opts.args = cmdArgs;
     } else {
-      ierror('bad call');
+      return ierror('bad call');
     }
-    return sysdo(opts);
+    opts.type = type;
+    return opts;
   }
   function isStr(it){
     return isString(it);
@@ -351,6 +462,12 @@
   }
   function isObject(it){
     return toString$.call(it).slice(8, -1) === 'Object';
+  }
+  function isFunc(it){
+    return isFunction(it);
+  }
+  function isFunction(it){
+    return toString$.call(it).slice(8, -1) === 'Function';
   }
   function isArr(it){
     return isArray(it);
@@ -619,7 +736,47 @@
   /**
     * @private
     */
-  function sysdo(arg$){
+  function sysdoExec(arg$){
+    var cmd, oncomplete, args, ref$, outList, errList, die, verbose, quiet, quietOnExit, sync, outCapture, errCapture, maxBuffer, ignoreNodeSyserr, opts, that, child;
+    cmd = arg$.cmd, oncomplete = arg$.oncomplete, args = (ref$ = arg$.args) != null
+      ? ref$
+      : [], outList = (ref$ = arg$.outList) != null ? ref$ : false, errList = (ref$ = arg$.errList) != null ? ref$ : false, die = (ref$ = arg$.die) != null
+      ? ref$
+      : Sys.die, verbose = (ref$ = arg$.verbose) != null
+      ? ref$
+      : Sys.verbose, quiet = (ref$ = arg$.quiet) != null
+      ? ref$
+      : Sys.quiet, quietOnExit = (ref$ = arg$.quietOnExit) != null
+      ? ref$
+      : Sys.quietOnExit, sync = (ref$ = arg$.sync) != null
+      ? ref$
+      : Sys.sync, outCapture = (ref$ = arg$.outCapture) != null
+      ? ref$
+      : Sys.outCapture, errCapture = (ref$ = arg$.errCapture) != null
+      ? ref$
+      : Sys.errCapture, maxBuffer = arg$.maxBuffer, ignoreNodeSyserr = (ref$ = arg$.ignoreNodeSyserr) != null
+      ? ref$
+      : Sys.ignoreNodeSyserr;
+    opts = {};
+    if ((that = maxBuffer) != null) {
+      opts.maxBuffer = that;
+    }
+    log('cmd', cmd);
+    return child = childProcess.exec(cmd, opts, function(err, stdout, stderr){
+      var code, signal;
+      process.stderr.write(stderr);
+      if (err) {
+        code = err.code;
+        signal = err.signal;
+        error("Err: " + err + " Code " + code + " Signal " + signal);
+      }
+      return process.stdout.write(stdout);
+    });
+  }
+  /**
+    * @private
+    */
+  function sysdoSpawn(arg$){
     var cmd, oncomplete, args, ref$, outList, errList, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outCapture, errCapture, slurp, ignoreNodeSyserr, keepTrailingNewline, syserrorFired, streamData, opts, cmdBin, cmdArgs, spawned, streamConfig, handleDataAsList, handleData, thisError;
     cmd = arg$.cmd, oncomplete = arg$.oncomplete, args = (ref$ = arg$.args) != null
       ? ref$
@@ -668,7 +825,7 @@
     }
     if (oncomplete != null) {
       if (toString$.call(oncomplete).slice(8, -1) !== 'Function') {
-        ierror('bad call');
+        return ierror('bad call');
       }
     } else {
       outCapture = false;
@@ -1032,6 +1189,8 @@
     icomplain1: icomplain1,
     sysSet: sysSet,
     sys: sys,
+    sysExec: sysExec,
+    sysSpawn: sysSpawn,
     sysOk: sysOk,
     getopt: getopt,
     sprintf: sprintf
@@ -1069,6 +1228,8 @@
     isString: isString,
     isBool: isBool,
     isBoolean: isBoolean,
+    isFunc: isFunc,
+    isFunction: isFunction,
     isANum: isANum,
     isANumber: isANumber
   };

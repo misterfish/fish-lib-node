@@ -69,21 +69,15 @@ function shell-quote arg
 function log ...msg
     console.log.apply console, msg
 
-/*
-function logf ...msg
-    opts = msg.pop()
-    if typeof! opts is not 'Object' then
-        iwarn 'bad call'
-        return
-    newline = true unless opts.newline == false or opts.nl == false
-    if newline
-        log.apply this, msg # preferable because dumps deeper
-    else
-        process.stdout.write join ' ' msg
-*/
-
-# iwarn 'string', 'string', ..., {opts}
-# iwarn 'string', 'string', ...
+/**
+ *
+ * Usage: 
+ *
+ * iwarn 'string' [, 'string', ...,] {opts}
+ *
+ * opts is optional.
+ *
+ */
 
 function iwarn ...msg
     opts = last msg
@@ -197,47 +191,67 @@ function sys-ok
     args-array.push opts
     sys.apply this, args-array
 
-/*
- * - - - 
+/**
  *
+ * sys-exec and sys-spawn have almost exactly the same usage:
  *
- * Usage:
+ * sys-xxx {opts}                                            # 1
+ * sys-xxx 'cmd'                                             # 2
+ * sys-xxx 'cmd', {opts}                                     # 3
+
+ * sys-xxx 'cmd', [args]                                     # 4 (only spawn)
+ * sys-xxx 'cmd', [args], {opts}                             # 5 (only spawn)
+ * sys-xxx 'cmd', [args], oncomplete                         # 6 (only spawn)
+ * sys-xxx 'cmd', [args], {opts}, oncomplete                 # 7 (only spawn)
+
+ * sys-xxx 'cmd', oncomplete                                 # 8
+ * sys-xxx 'cmd', {opts}, oncomplete                         # 9
+ * sys-xxx 'cmd', 'arg1', ... , oncomplete                   # 10
+ * sys-xxx 'cmd', 'arg1', ... , {opts}, oncomplete           # 11
+ * sys-xxx 'cmd', 'arg1', ...                                # 12
+ * sys-xxx 'cmd', 'arg1', ... , {opts}                       # 13
  *
- * {opts} is always last and always optional.
- *
- * sys {opts}                                            # 1
- * sys 'cmd', {opts}                                     # 2
- * sys 'cmd', [args], {opts}                             # 3
- * sys 'cmd', [args], oncomplete, {opts}                 # 4
- * sys 'cmd', oncomplete, {opts}                         # 5
- * sys 'cmd', 'arg1', ... , oncomplete, {opts}           # 6
- * sys 'cmd', 'arg1', ... , {opts}                       # 7
- *
- * We use spawn instead of exec for better buffering control (exec can
- * easily overflow and die).
- *
- * If oncomplete is given or opt 'sync' is false, use async. 
- * sync is not possible without more recent nodes by the way.
- *
- * The spawn object is returned in all cases and the caller can do what
- * they want with it. 
+ * Command strings and elements of [args] are joined on ' '.
  * 
+ * Quoting is handled very differently in the two cases.
+ *
+ * The ChildProcess object is returned in all cases and the caller can do
+ * what they want with it. 
+ *
+ * sys-exec:
+ *
+ * sys-exec uses child_process.exec and should be used for shell-style
+ * commands, e.g. 'ls | wc > out'
+ *
+ * Note that node will kill the child process if it emits too much data on
+ * stdout or stderr (see 'maxBuffer' below).
+ * 
+ * Almost all components not involving shell metacharacters (and anything
+ * user-supplied) should always be quoted, using shell-quote() for example.
+ * 
+ * Examples:
+ *
+ * sys-exec 'ls', shell-quote source-file, '| wc >', shell-quote out-file
+ * 
+ * sys-spawn:
+ *
+ * Is more powerful and robust, and node won't kill the child process.
+ * Use this if you don't need shell-style commands and want to control the
+ * streams.
+ *
+ * The first string is taken as the command binary and the rest of the
+ * arguments, whether strings or in the [args] array, are passed to the
+ * [args] param of child_process.spawn and are by definition safe
+ * ("quoted").
+ *
+ * options:
+ * 
+ * If oncomplete is given or opt 'sync' is false, calls will be asynchronous.
+ *
+ * (sync mode is currently not implemented).
+ *
  * oncomplete is for success and error both.
- *    params: ok, code, out, err
- *
- * If out-ignore or err-ignore is true, those streams are not listened
- * on. (Caller still can, though).
- *
- * Otherwise:
- *
- *  If out-capture/err-capture is true, read everything into a scalar/list (depending
- *  on out-list/err-list) and pass it to oncomplete. If oncomplete is
- *  nothing then capture-xxx are set to false.
- *
- *  If out-capture/err-capture is false, print to stdout/stderr.
- *
- * cmd can be 'ls -t /tmp', or cmd can be 'ls' and args can be 
- * <[ -t tmp ]>, or cmd can even be 'ls -t' and args can be ['/tmp'].
+ * params: ok, code, out, err
  *
  * If the command fails completely or dies on a signal, we print an error,
  * unless 'quiet' was given.
@@ -249,60 +263,140 @@ function sys-ok
  * 'quiet-on-exit' is useful for commands like find, which return non-zero
  * if there were any warnings, but we don't want a warning or error printed.
  *
- * Return the spawn object in all cases.
+ * 'out-list' / 'err-list' mean split the output on '\n'. This is not a good
+ * idea if the output consists of filenames (because filenames can contain
+ * newlines).
+ *
+ * 'ignore-node-syserr': hide ugly error messages from node (e.g. spawn ENOENT).
+ *
+ * options (spawn only):
+ *
+ * If out-ignore or err-ignore is true, those streams are not listened
+ * on, though the caller is free to.
+ *
+ * Otherwise:
+ *
+ *  If out-capture/err-capture is true, read everything into a scalar/list (depending
+ *  on out-list/err-list) and pass it to oncomplete. If oncomplete is
+ *  nothing then xxx-capture are set to false.
+ *
+ *  If out-capture/err-capture is false, print to stdout/stderr.
+ *
+ * 'keep-trailing-newline': keep the trailing newline at the end of the streams.
+ *
+ * options (exec only):
+ *
+ * If out-capture/err-capture is true, pass the entire stdout and stderr as
+ * a scalar or a list (depending on out-list/err-list) to oncomplete.
+ *
+ * Otherwise, print to stdout/stderr.
+ *
+ * maxBuffer (bytes): node will kill the child process if stdout or stderr exceeds this size.
+ *                    default: not set, meaning use node's default (currently 200K).
  */
 
+/* Alias for sys-exec
+ */
 function sys
-    args = arguments
-    num-args = arguments.length
-    if typeof! last(args) is not 'Object'
-        args[num-args] = {}
-        args.length++ # array-like
-        return sys.apply this, args
+    sys-exec.apply null arguments
+
+function sys-exec
+    args-array = [].slice.call arguments
+        ..unshift 'exec'
+
+    opts = sys-process-args.apply null args-array
+    sysdo-exec opts
+
+function sys-spawn
+    args-array = [].slice.call arguments
+        ..unshift 'spawn'
+
+    opts = sys-process-args.apply null args-array
+    sysdo-spawn opts
+
+/**
+ * @private
+ */
+function sys-process-args
+    arg = [].slice.call arguments
+    type = arg.shift()
+    return ierror 'bad call' if type not in <[ exec spawn ]>
+    num-args = arg.length
+
+    if is-arr arg.1 and type is 'exec'
+        return ierror 'This usage is not supported for exec mode'
 
     # 1
-    if num-args == 1
-        opts = args[0]
+    if num-args == 1 and is-obj arg.0
+        opts = arg.0
     # 2
-    else if num-args == 2
-        [ cmd, opts ] = args
-        opts.cmd = cmd
+    else if num-args == 1 and is-str arg.0
+        [ cmd ] = arg
+        opts = { cmd }
     # 3
-    else if num-args == 3 and typeof! args[1] is 'Array'
-        [ cmd, cmd-args, opts ] = args
+    else if num-args == 2 and is-obj arg.1
+        [ cmd, opts ] = arg
         opts.cmd = cmd
-        opts.args = cmd-args
     # 4
-    else if num-args == 4 and typeof! args[1] is 'Array'
-        [ cmd, cmd-args, oncomplete, opts ] = args
-        opts.cmd = cmd
-        opts.args = cmd-args
-        opts.oncomplete = oncomplete
+    else if num-args == 2 and is-arr arg.1
+        [ cmd, args ] = arg
+        opts = { cmd, args }
     # 5
-    else if num-args == 3 and typeof! args[1] is 'Function'
-        [ cmd, oncomplete, opts ] = args
+    else if num-args == 3 and is-arr arg.1 and is-obj arg.2
+        [ cmd, args, opts ] = arg
         opts.cmd = cmd
-        opts.oncomplete = oncomplete
+        opts.args = args
     # 6
-    else if num-args >= 4 and typeof! args[num-args - 2] is 'Function'
-        args-array = [].slice.call args
-        opts = args-array.pop()
-        oncomplete = args-array.pop()
-        [ cmd, ...cmd-args ] = args-array
-        opts.cmd = cmd
-        opts.args = cmd-args
-        opts.oncomplete = oncomplete
+    else if num-args == 3 and is-arr arg.1 and is-func arg.2
+        [ cmd, args, oncomplete ] = arg
+        opts = { cmd, args, oncomplete }
     # 7
+    else if num-args == 4 and is-arr arg.1
+        [ cmd, args, opts, oncomplete ] = arg
+        opts.cmd = cmd
+        opts.args = args
+        opts.oncomplete = oncomplete
+    # 8
+    else if num-args == 2 and is-func arg.1
+        [ cmd, oncomplete ] = arg
+        opts = { cmd, oncomplete }
+    # 9
+    else if num-args == 3 and is-obj arg.1
+        [ cmd, opts, oncomplete ] = arg
+        opts.cmd = cmd
+        opts.oncomplete = oncomplete
+    # 10
+    else if num-args >= 3 and is-str arg.1
+        args-array = [].slice.call arg
+        oncomplete = args-array.pop()
+        [ cmd, ...args ] = args-array
+        opts = { cmd, args, oncomplete }
+    # 11
+    else if num-args >= 4 and is-str arg.1
+        args-array = [].slice.call arg
+        oncomplete = args-array.pop()
+        opts = args-array.pop()
+        [ cmd, ...args ] = args-array
+        opts.cmd = cmd
+        opts.args = args
+        opts.oncomplete = oncomplete
+    # 12
+    else if num-args >= 2 and is-str arg.1
+        args-array = [].slice.call arg
+        [ cmd, ...args ] = args-array
+        opts = { cmd, args }
+    # 13
     else if num-args >= 3
-        args-array = [].slice.call args
+        args-array = [].slice.call arg
         opts = args-array.pop()
         [ cmd, ...cmd-args ] = args-array
         opts.cmd = cmd
         opts.args = cmd-args
     else
-        ierror 'bad call'
+        return ierror 'bad call'
 
-    sysdo opts
+    opts.type = type
+    opts
 
 function is-str
     is-string it
@@ -321,6 +415,12 @@ function is-obj
 
 function is-object
     typeof! it is 'Object'
+
+function is-func
+    is-function it
+
+function is-function
+    typeof! it is 'Function'
 
 function is-arr
     is-array it
@@ -546,8 +646,48 @@ function _color c, { warn-on-error } = {}
   * @private
   */
 
-function sysdo {
-    cmd, oncomplete, args = [],
+function sysdo-exec {
+    cmd,
+    oncomplete,
+    args = [],
+    out-list = false,
+    err-list = false,
+
+    die = Sys.die,
+    verbose = Sys.verbose,
+    quiet = Sys.quiet,
+    quiet-on-exit = Sys.quiet-on-exit,
+    sync = Sys.sync,
+    out-capture = Sys.out-capture,
+    err-capture = Sys.err-capture,
+
+    max-buffer,
+
+    # ? XX
+    ignore-node-syserr = Sys.ignore-node-syserr,
+} # /sysdo args
+
+    opts = {} # max-buffer
+    opts.max-buffer = that if max-buffer?
+    log 'cmd' cmd
+    child = child-process.exec cmd, opts, (err, stdout, stderr) ->
+        process.stderr.write stderr
+        if err
+            code = err.code
+            signal = err.signal # doesn't seem to work
+            error "Err: #err Code #code Signal #signal"
+        process.stdout.write stdout
+
+
+
+/**
+  * @private
+  */
+
+function sysdo-spawn {
+    cmd,
+    oncomplete,
+    args = [],
     out-list = false,
     err-list = false,
     out-ignore = false,
@@ -561,6 +701,7 @@ function sysdo {
     out-capture = Sys.out-capture,
     err-capture = Sys.err-capture,
     slurp = Sys.slurp,
+
     ignore-node-syserr = Sys.ignore-node-syserr,
     keep-trailing-newline = Sys.keep-trailing-newline,
 } # /sysdo args
@@ -581,7 +722,7 @@ function sysdo {
         return
 
     if oncomplete?
-        ierror 'bad call' unless typeof! oncomplete is 'Function'
+        return ierror 'bad call' unless typeof! oncomplete is 'Function'
     else
         out-capture = false
         err-capture = false
@@ -675,13 +816,13 @@ function sysdo {
 
     # it = stream-config obj
     values stream-config |> each ->
-        it.spawn-stream.on 'error', (error) ->
+        it.spawn-stream.on 'error' (error) ->
             iwarn "Got error on stream std#which (#{error})"
 
         return if it.ignore
 
         # data is Buffer or string
-        it.spawn-stream.on 'data', (data) ->
+        it.spawn-stream.on 'data' (data) ->
             if is-string data
                 str = data
             else if Buffer.isBuffer data
@@ -692,7 +833,7 @@ function sysdo {
             handle-data it, str
 
         # No more data.
-        it.spawn-stream.on 'end', ->
+        it.spawn-stream.on 'end' ->
             # Remove final newline.
             # This assumes nothing can happen (like an error)
             # between the last data event and the end event.
@@ -724,7 +865,7 @@ function sysdo {
     # ondata events of stderr/stdout might not have fired yet (and
     # probably never will). 
     # e.g., /bad/ls abc
-    spawned.on 'error', (errobj) ->
+    spawned.on 'error' (errobj) ->
         # This is a very nodey message (e.g. spawn ENOENT)
         # If you're looking for something like 'bash: finderjsdf: command not found', forget it ... there is no shell spawned.
         # Maybe provide an opt to capture this error, but let the other one
@@ -903,7 +1044,7 @@ Identifier.main = {
     ord, chr, bullet, log, info,
     err-set, iwarn, ierror, warn, error,
     icomplain, icomplain1,
-    sys-set, sys, sys-ok,
+    sys-set, sys, sys-exec, sys-spawn, sys-ok,
     getopt, sprintf,
 }
 
@@ -918,8 +1059,7 @@ Identifier.util = {
     shuffle,
     is-int, is-integer, is-positive-int, is-non-negative-int, is-num,
     is-number, is-array, is-arr, is-obj, is-object, is-str, is-string,
-    is-bool, is-boolean,
-    is-a-num, is-a-number,
+    is-bool, is-boolean, is-func, is-function, is-a-num, is-a-number,
 }
 
 for _, ident of Identifier
