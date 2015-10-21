@@ -761,7 +761,6 @@
     if ((that = maxBuffer) != null) {
       opts.maxBuffer = that;
     }
-    log('cmd', cmd);
     return child = childProcess.exec(cmd, opts, function(err, stdout, stderr){
       var code, signal;
       process.stderr.write(stderr);

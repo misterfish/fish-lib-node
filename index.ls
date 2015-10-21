@@ -669,7 +669,6 @@ function sysdo-exec {
 
     opts = {} # max-buffer
     opts.max-buffer = that if max-buffer?
-    log 'cmd' cmd
     child = child-process.exec cmd, opts, (err, stdout, stderr) ->
         process.stderr.write stderr
         if err
