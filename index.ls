@@ -245,9 +245,14 @@ function sys-ok
  * Almost all components not involving shell metacharacters (and anything
  * user-supplied) should always be quoted, using shell-quote() for example.
  * 
- * Examples:
+ * Example:
  *
  * sys-exec 'ls', shell-quote source-file, '| wc >', shell-quote out-file
+ *
+ * Note that it's tricky to know when a shell command fails:
+ *
+ * sys-exec 'wcabc | wc' will print an error to stderr in the default case but will return a zero code.
+ * 
  * 
  * sys-spawn:
  *
@@ -701,6 +706,12 @@ function sysdo-exec {
 } # /sysdo args
 
     ok = true
+
+    args.unshift cmd
+    cmd = args.join ' '
+    if verbose
+        log "#{ green bullet! } #cmd"
+
     child = child-process.exec cmd, invocation-opts, (error, out, err) ->
         process.stderr.write err if err-print
         process.stdout.write out if out-print
@@ -967,7 +978,6 @@ function syserror ({ cmd, code, signal, oncomplete, out, err, die, quiet, quiet-
         str-exit
         str-sig
     ]
-
     if die
         error str
         process.exit code

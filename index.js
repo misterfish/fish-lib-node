@@ -292,9 +292,14 @@
    * Almost all components not involving shell metacharacters (and anything
    * user-supplied) should always be quoted, using shell-quote() for example.
    * 
-   * Examples:
+   * Example:
    *
    * sys-exec 'ls', shell-quote source-file, '| wc >', shell-quote out-file
+   *
+   * Note that it's tricky to know when a shell command fails:
+   *
+   * sys-exec 'wcabc | wc' will print an error to stderr in the default case but will return a zero code.
+   * 
    * 
    * sys-spawn:
    *
@@ -802,6 +807,11 @@
       ? ref$
       : Sys.errList, invocationOpts = arg$.invocationOpts;
     ok = true;
+    args.unshift(cmd);
+    cmd = args.join(' ');
+    if (verbose) {
+      log(green(bullet()) + " " + cmd);
+    }
     child = childProcess.exec(cmd, invocationOpts, function(error, out, err){
       var signal, code;
       if (errPrint) {
