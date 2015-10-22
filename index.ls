@@ -41,6 +41,16 @@ Sys =
     keep-trailing-newline: false
 
 Err =
+    # Fatal is used for the complain family of functions to decide whether
+    # to route through (i)warn or (i)complain.
+    # It is not used to make (i)error non-fatal.
+    # This module never calls (i)error, leaving it up to the caller to die
+    # The only exception is the sys family of functions, which take a 'die'
+    # flag (false by default).
+    # At some point the iwarn calls for things like invalid function calls
+    # might get upgraded to icomplain calls, so they can optionally die.
+    # Err.fatal might also get set to false by default at some point, so be
+    # sure to set it if you really depend on it.
     fatal: true
     stack-trace: false
 
@@ -186,8 +196,7 @@ function sys-ok
     args-array = [].slice.call arguments
     onxxx = args-array.pop()
     if not is-func onxxx
-        iwarn 'bad call'
-        return
+        return iwarn 'bad call'
     if is-func last args-array
         onok = args-array.pop()
         onnotok = onxxx
@@ -234,6 +243,10 @@ function sys-ok
  * The ChildProcess object is returned in all cases and the caller can do
  * what they want with it. 
  *
+ * These functions can die and bring the whole program down with them. To
+ * avoid that make sure 'die' is false (see also sys-set). By default it is
+ * globally false.
+ *
  * sys-exec:
  *
  * sys-exec uses child_process.exec and should be used for shell-style
@@ -278,8 +291,7 @@ function sys-ok
  * If the command fails completely or dies on a signal, we print an error,
  * unless 'quiet' was given.
  *
- * On non-zero or signal we return with ierror or iwarn depending on 'die'.
- * ierror is usually fatal but can be made non-fatal using Err.fatal.
+ * On non-zero or signal we return with error or warn depending on 'die'.
  *
  * 'quiet' mixed with 'die' will be ignored.
  *
@@ -336,7 +348,7 @@ function sys
         sys-exec.apply null arguments
     else if Sys.type is 'spawn'
         sys-spawn.apply null arguments
-    else return ierror 'bad Sys.type'
+    else return warn 'bad Sys.type'
 
 function sys-exec
     args-array = [].slice.call arguments
@@ -358,11 +370,11 @@ function sys-spawn
 function sys-process-args
     arg = [].slice.call arguments
     type = arg.shift()
-    return ierror 'bad call' if type not in <[ exec spawn ]>
+    return iwarn 'bad call' if type not in <[ exec spawn ]>
     num-args = arg.length
 
     if is-arr arg.1 and type is 'exec'
-        return ierror 'This usage is not supported for exec mode'
+        return iwarn 'This usage is not supported for exec mode'
 
     # 1
     if num-args == 1 and is-obj arg.0
@@ -431,7 +443,7 @@ function sys-process-args
         opts.cmd = cmd
         opts.args = cmd-args
     else
-        return ierror 'bad call'
+        return iwarn 'bad call'
 
     opts.type = type
     opts
@@ -545,7 +557,7 @@ function import-all target
 function import-kind target, ...kinds
     doit = (kind) ->
         identifiers = Identifier[kind]
-        if not identifiers? then return ierror do
+        if not identifiers? then return iwarn do
             'bad import:' bright-red(kind)
             stack-rewind: 1
         for k, v of identifiers
@@ -619,7 +631,7 @@ function getopt args
             type = v
         do ->
             long = opt
-            long-type = types[type] ? error 'Invalid type:' bright-red type
+            long-type = types[type] ? complain 'Invalid type:' bright-red type
             known-opts[long] = long-type
             # Map single letters to the corresponding long one.
             short-hands[long.substring 0 1] = ['--' + long]
@@ -629,7 +641,7 @@ function getopt args
     for k, v of parsed
         if k == 'argv' then continue
         if not known-opts[k] then
-            error "Unknown option:" bright-red k
+            complain "Unknown option:" bright-red k
 
     parsed
 
@@ -712,17 +724,17 @@ function sysdo-exec {
     if verbose
         log "#{ green bullet! } #cmd"
 
-    child = child-process.exec cmd, invocation-opts, (error, out, err) ->
+    child = child-process.exec cmd, invocation-opts, (the-error, out, err) ->
         process.stderr.write err if err-print
         process.stdout.write out if out-print
 
-        if error
+        if the-error
             signal = void
-            code = error.code
+            code = the-error.code
             if code is 'ENOENT' # no shell
                 warn 'Couldn\'t spawn a shell!'
             else
-                signal = error.signal # not sure if node is actually setting this in all cases.
+                signal = the-error.signal # not sure if node is actually setting this in all cases.
             # calls oncomplete
             return syserror { cmd, code, signal, oncomplete, out, err, die, quiet, quiet-on-exit }
 
@@ -734,7 +746,7 @@ function sysdo-exec {
         oncomplete { ok: true, out, err } if oncomplete?
 
     if not child?
-        complain = if die then ierror else iwarn
+        complain = if die then error else warn
         complain 'Null return from child-process.exec'
         oncomplete { ok: false, out, err } if oncomplete?
 
@@ -785,7 +797,7 @@ function sysdo-spawn {
         return
 
     if oncomplete?
-        return ierror 'bad call' unless is-func that
+        return iwarn 'bad call' unless is-func that
     else
         out-print = true
         err-print = true
@@ -939,6 +951,7 @@ function sysdo-spawn {
 
         if not syserror-fired
             syserror-fired = true
+            # calls oncomplete.
             return this-error {}
 
     # exit is when the process exits, but the streams might still be
@@ -951,7 +964,7 @@ function sysdo-spawn {
         if code is not 0
             if not syserror-fired
                 syserror-fired = true
-                # will eventually call oncomplete, too.
+                # calls oncomplete.
                 return this-error { code, signal }
         else
             oncomplete { ok: true, signal, code, stream-data.out, stream-data.err } if oncomplete?
@@ -997,13 +1010,24 @@ function syserror ({ cmd, code, signal, oncomplete, out, err, die, quiet, quiet-
  * @private
  */
 
-/*
+/**
  * Checks Err.fatal and routes through either ierror or iwarn with stack-rewind bumped by one.
  */
 function icomplain ...msg
     opts = last msg
-    if typeof! opts is 'Object' then msg.pop() else opts = {}
+    if is-obj opts then msg.pop() else opts = {}
     func = Err.fatal and ierror or iwarn
+    opts.stack-rewind ?= 0
+    opts.stack-rewind++
+    func msg, opts
+
+/**
+ * Checks Err.fatal and routes through either error or warn with stack-rewind bumped by one.
+ */
+function complain ...msg
+    opts = last msg
+    if is-obj opts then msg.pop() else opts = {}
+    func = Err.fatal and error or warn
     opts.stack-rewind ?= 0
     opts.stack-rewind++
     func msg, opts
@@ -1018,6 +1042,17 @@ function icomplain1 ...msg
     if is-obj opts then msg.pop() else opts = {}
     opts.stack-rewind = 2
     icomplain msg, opts
+
+/*
+ * Like calling complain msg, stack-rewind: 1
+ * However since it's another call on the stack, it's 2 in the call.
+ * 
+ */
+function complain1 ...msg
+    opts = last msg
+    if is-obj opts then msg.pop() else opts = {}
+    opts.stack-rewind = 2
+    complain msg, opts
 
 /**
  * @private
@@ -1108,7 +1143,7 @@ Identifier.main = {
     shell-quote, shell-parse,
     ord, chr, bullet, log, info,
     err-set, iwarn, ierror, warn, error,
-    icomplain, icomplain1,
+    complain, complain1, icomplain, icomplain1,
     sys-set, sys, sys-exec, sys-spawn, sys-ok,
     getopt, sprintf,
 }

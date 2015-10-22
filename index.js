@@ -220,8 +220,7 @@
     argsArray = [].slice.call(arguments);
     onxxx = argsArray.pop();
     if (!isFunc(onxxx)) {
-      iwarn('bad call');
-      return;
+      return iwarn('bad call');
     }
     if (isFunc(last(argsArray))) {
       onok = argsArray.pop();
@@ -281,6 +280,10 @@
    * The ChildProcess object is returned in all cases and the caller can do
    * what they want with it. 
    *
+   * These functions can die and bring the whole program down with them. To
+   * avoid that make sure 'die' is false (see also sys-set). By default it is
+   * globally false.
+   *
    * sys-exec:
    *
    * sys-exec uses child_process.exec and should be used for shell-style
@@ -325,8 +328,7 @@
    * If the command fails completely or dies on a signal, we print an error,
    * unless 'quiet' was given.
    *
-   * On non-zero or signal we return with ierror or iwarn depending on 'die'.
-   * ierror is usually fatal but can be made non-fatal using Err.fatal.
+   * On non-zero or signal we return with error or warn depending on 'die'.
    *
    * 'quiet' mixed with 'die' will be ignored.
    *
@@ -383,7 +385,7 @@
     } else if (Sys.type === 'spawn') {
       return sysSpawn.apply(null, arguments);
     } else {
-      return ierror('bad Sys.type');
+      return warn('bad Sys.type');
     }
   }
   function sysExec(){
@@ -408,11 +410,11 @@
     arg = [].slice.call(arguments);
     type = arg.shift();
     if (type !== 'exec' && type !== 'spawn') {
-      return ierror('bad call');
+      return iwarn('bad call');
     }
     numArgs = arg.length;
     if (isArr(arg[1]) && type === 'exec') {
-      return ierror('This usage is not supported for exec mode');
+      return iwarn('This usage is not supported for exec mode');
     }
     if (numArgs === 1 && isObj(arg[0])) {
       opts = arg[0];
@@ -487,7 +489,7 @@
       opts.cmd = cmd;
       opts.args = cmdArgs;
     } else {
-      return ierror('bad call');
+      return iwarn('bad call');
     }
     opts.type = type;
     return opts;
@@ -625,7 +627,7 @@
       var identifiers, k, v, results$ = [];
       identifiers = Identifier[kind];
       if (identifiers == null) {
-        return ierror('bad import:', brightRed(kind), {
+        return iwarn('bad import:', brightRed(kind), {
           stackRewind: 1
         });
       }
@@ -714,7 +716,7 @@
         continue;
       }
       if (!knownOpts[k]) {
-        error("Unknown option:", brightRed(k));
+        complain("Unknown option:", brightRed(k));
       }
     }
     return parsed;
@@ -723,7 +725,7 @@
       long = opt;
       longType = (ref$ = types[type]) != null
         ? ref$
-        : error('Invalid type:', brightRed(type));
+        : complain('Invalid type:', brightRed(type));
       knownOpts[long] = longType;
       return shortHands[long.substring(0, 1)] = ['--' + long];
     }
@@ -812,7 +814,7 @@
     if (verbose) {
       log(green(bullet()) + " " + cmd);
     }
-    child = childProcess.exec(cmd, invocationOpts, function(error, out, err){
+    child = childProcess.exec(cmd, invocationOpts, function(theError, out, err){
       var signal, code;
       if (errPrint) {
         process.stderr.write(err);
@@ -820,13 +822,13 @@
       if (outPrint) {
         process.stdout.write(out);
       }
-      if (error) {
+      if (theError) {
         signal = void 8;
-        code = error.code;
+        code = theError.code;
         if (code === 'ENOENT') {
           warn('Couldn\'t spawn a shell!');
         } else {
-          signal = error.signal;
+          signal = theError.signal;
         }
         return syserror({
           cmd: cmd,
@@ -855,7 +857,7 @@
       }
     });
     if (child == null) {
-      complain = die ? ierror : iwarn;
+      complain = die ? error : warn;
       complain('Null return from child-process.exec');
       if (oncomplete != null) {
         return oncomplete({
@@ -922,7 +924,7 @@
     }
     if ((that = oncomplete) != null) {
       if (!isFunc(that)) {
-        return ierror('bad call');
+        return iwarn('bad call');
       }
     } else {
       outPrint = true;
@@ -1137,19 +1139,36 @@
   /**
    * @private
    */
-  /*
+  /**
    * Checks Err.fatal and routes through either ierror or iwarn with stack-rewind bumped by one.
    */
   function icomplain(){
     var msg, opts, func;
     msg = slice$.call(arguments);
     opts = last(msg);
-    if (toString$.call(opts).slice(8, -1) === 'Object') {
+    if (isObj(opts)) {
       msg.pop();
     } else {
       opts = {};
     }
     func = Err.fatal && ierror || iwarn;
+    opts.stackRewind == null && (opts.stackRewind = 0);
+    opts.stackRewind++;
+    return func(msg, opts);
+  }
+  /**
+   * Checks Err.fatal and routes through either error or warn with stack-rewind bumped by one.
+   */
+  function complain(){
+    var msg, opts, func;
+    msg = slice$.call(arguments);
+    opts = last(msg);
+    if (isObj(opts)) {
+      msg.pop();
+    } else {
+      opts = {};
+    }
+    func = Err.fatal && error || warn;
     opts.stackRewind == null && (opts.stackRewind = 0);
     opts.stackRewind++;
     return func(msg, opts);
@@ -1170,6 +1189,23 @@
     }
     opts.stackRewind = 2;
     return icomplain(msg, opts);
+  }
+  /*
+   * Like calling complain msg, stack-rewind: 1
+   * However since it's another call on the stack, it's 2 in the call.
+   * 
+   */
+  function complain1(){
+    var msg, opts;
+    msg = slice$.call(arguments);
+    opts = last(msg);
+    if (isObj(opts)) {
+      msg.pop();
+    } else {
+      opts = {};
+    }
+    opts.stackRewind = 2;
+    return complain(msg, opts);
   }
   /**
    * @private
@@ -1281,6 +1317,8 @@
     ierror: ierror,
     warn: warn,
     error: error,
+    complain: complain,
+    complain1: complain1,
     icomplain: icomplain,
     icomplain1: icomplain1,
     sysSet: sysSet,
