@@ -21,13 +21,16 @@
     util: {}
   };
   Sys = {
+    type: 'exec',
     die: false,
     verbose: true,
     quiet: false,
     quietOnExit: false,
     sync: false,
-    errCapture: false,
-    outCapture: true,
+    errPrint: true,
+    outPrint: false,
+    errList: false,
+    outList: false,
     slurp: true,
     ignoreNodeSyserr: false,
     keepTrailingNewline: false
@@ -197,15 +200,30 @@
   function sysSet(opts){
     return confSet(Sys, 'sys', opts);
   }
+  /**
+   *
+   * Usage:
+   *
+   * sys-ok <pass-through>, onok
+   * sys-ok <pass-through>, onok, onnotok
+   *
+   * All args but onok and onnotok are simply passed through to sys. 
+   *
+   * All forms of sys are supported except the ones with an {opts} arg.
+   * 
+   * out and err are ignored and that can't be changed by the caller -- keep
+   * this function simple and more complex things can use sys-exec or sys-spawn
+   * directly.
+   */
   function sysOk(){
     var argsArray, onxxx, onok, onnotok, opts;
     argsArray = [].slice.call(arguments);
     onxxx = argsArray.pop();
-    if (toString$.call(onxxx).slice(8, -1) !== 'Function') {
+    if (!isFunc(onxxx)) {
       iwarn('bad call');
       return;
     }
-    if (toString$.call(last(argsArray)).slice(8, -1) === 'Function') {
+    if (isFunc(last(argsArray))) {
       onok = argsArray.pop();
       onnotok = onxxx;
     } else {
@@ -214,19 +232,24 @@
     }
     opts = {
       oncomplete: function(arg$){
-        var ok, out, err;
-        ok = arg$.ok, out = arg$.out, err = arg$.err;
+        var ok, code, signal;
+        ok = arg$.ok, code = arg$.code, signal = arg$.signal;
         if (ok) {
           if (onok) {
             return onok();
           }
         } else {
           if (onnotok) {
-            return onnotok();
+            return onnotok({
+              code: code,
+              signal: signal
+            });
           }
         }
       },
-      quiet: true
+      quiet: true,
+      outIgnore: true,
+      errIgnore: true
     };
     argsArray.push(opts);
     return sys.apply(this, argsArray);
@@ -290,11 +313,15 @@
    *
    * (sync mode is currently not implemented).
    *
-   * oncomplete is for success and error both.
-   * params: ok, code, out, err
+   * oncomplete is for both success and error.
+   *
+   *     params: ok, code, signal, out, err
    *
    * If the command fails completely or dies on a signal, we print an error,
    * unless 'quiet' was given.
+   *
+   * On non-zero or signal we return with ierror or iwarn depending on 'die'.
+   * ierror is usually fatal but can be made non-fatal using Err.fatal.
    *
    * 'quiet' mixed with 'die' will be ignored.
    *
@@ -307,7 +334,8 @@
    * idea if the output consists of filenames (because filenames can contain
    * newlines).
    *
-   * 'ignore-node-syserr': hide ugly error messages from node (e.g. spawn ENOENT).
+   * 'invocation-opts': object values passed to underlying invocation (e.g. cwd, uid, etc.)
+   *
    *
    * options (spawn only):
    *
@@ -316,28 +344,42 @@
    *
    * Otherwise:
    *
-   *  If out-capture/err-capture is true, read everything into a scalar/list (depending
-   *  on out-list/err-list) and pass it to oncomplete. If oncomplete is
-   *  nothing then xxx-capture are set to false.
+   *  If out-print/err-print is true, print the data to its stream.
    *
-   *  If out-capture/err-capture is false, print to stdout/stderr.
+   *  If out-print/err-print is false, read everything into a scalar/list
+   *  (depending on out-list/err-list) and pass it to oncomplete. If oncomplete
+   *  is nothing then out-print/err-print are set to true. You can use xxx-ignore
+   *  to really ignore them, or pass a no-op as oncomplete to listen and then throw
+   *  away.
    *
    * 'keep-trailing-newline': keep the trailing newline at the end of the streams.
    *
+   * 'ignore-node-syserr': hide ugly error messages from node (e.g. spawn ENOENT).
+   *
    * options (exec only):
    *
-   * If out-capture/err-capture is true, pass the entire stdout and stderr as
-   * a scalar or a list (depending on out-list/err-list) to oncomplete.
+   * If out-print/err-print is true, print the data on its stream. stdout and
+   * stderr are harvested by the underlying exec in all cases, and are passed to
+   * the oncomplete function in all cases, too.
    *
-   * Otherwise, print to stdout/stderr.
+   * out-list/err-list do the same as for spawn.
    *
-   * maxBuffer (bytes): node will kill the child process if stdout or stderr exceeds this size.
-   *                    default: not set, meaning use node's default (currently 200K).
+   * invocation-opts.max-buffer (bytes): 
+   *     node will kill the child process if stdout or stderr exceeds this size.
+   *     default: not set, meaning use node's default (currently 200K).
+   * 
    */
-  /* Alias for sys-exec
+  /**
+   * Calls sys-exec or sys-spawn depending on Sys.type.
    */
   function sys(){
-    return sysExec.apply(null, arguments);
+    if (Sys.type === 'exec') {
+      return sysExec.apply(null, arguments);
+    } else if (Sys.type === 'spawn') {
+      return sysSpawn.apply(null, arguments);
+    } else {
+      return ierror('bad Sys.type');
+    }
   }
   function sysExec(){
     var x$, argsArray, opts;
@@ -737,10 +779,10 @@
     * @private
     */
   function sysdoExec(arg$){
-    var cmd, oncomplete, args, ref$, outList, errList, die, verbose, quiet, quietOnExit, sync, outCapture, errCapture, maxBuffer, ignoreNodeSyserr, opts, that, child;
+    var cmd, oncomplete, args, ref$, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outList, errList, invocationOpts, ok, child, complain;
     cmd = arg$.cmd, oncomplete = arg$.oncomplete, args = (ref$ = arg$.args) != null
       ? ref$
-      : [], outList = (ref$ = arg$.outList) != null ? ref$ : false, errList = (ref$ = arg$.errList) != null ? ref$ : false, die = (ref$ = arg$.die) != null
+      : [], die = (ref$ = arg$.die) != null
       ? ref$
       : Sys.die, verbose = (ref$ = arg$.verbose) != null
       ? ref$
@@ -750,36 +792,74 @@
       ? ref$
       : Sys.quietOnExit, sync = (ref$ = arg$.sync) != null
       ? ref$
-      : Sys.sync, outCapture = (ref$ = arg$.outCapture) != null
+      : Sys.sync, outPrint = (ref$ = arg$.outPrint) != null
       ? ref$
-      : Sys.outCapture, errCapture = (ref$ = arg$.errCapture) != null
+      : Sys.outPrint, errPrint = (ref$ = arg$.errPrint) != null
       ? ref$
-      : Sys.errCapture, maxBuffer = arg$.maxBuffer, ignoreNodeSyserr = (ref$ = arg$.ignoreNodeSyserr) != null
+      : Sys.errPrint, outList = (ref$ = arg$.outList) != null
       ? ref$
-      : Sys.ignoreNodeSyserr;
-    opts = {};
-    if ((that = maxBuffer) != null) {
-      opts.maxBuffer = that;
-    }
-    return child = childProcess.exec(cmd, opts, function(err, stdout, stderr){
-      var code, signal;
-      process.stderr.write(stderr);
-      if (err) {
-        code = err.code;
-        signal = err.signal;
-        error("Err: " + err + " Code " + code + " Signal " + signal);
+      : Sys.outList, errList = (ref$ = arg$.errList) != null
+      ? ref$
+      : Sys.errList, invocationOpts = arg$.invocationOpts;
+    ok = true;
+    child = childProcess.exec(cmd, invocationOpts, function(error, out, err){
+      var signal, code;
+      if (errPrint) {
+        process.stderr.write(err);
       }
-      return process.stdout.write(stdout);
+      if (outPrint) {
+        process.stdout.write(out);
+      }
+      if (error) {
+        signal = void 8;
+        code = error.code;
+        if (code === 'ENOENT') {
+          warn('Couldn\'t spawn a shell!');
+        } else {
+          signal = error.signal;
+        }
+        return syserror({
+          cmd: cmd,
+          code: code,
+          signal: signal,
+          oncomplete: oncomplete,
+          out: out,
+          err: err,
+          die: die,
+          quiet: quiet,
+          quietOnExit: quietOnExit
+        });
+      }
+      if (errList) {
+        err = err.split(/\n/);
+      }
+      if (outList) {
+        return out = out.split(/\n/);
+      }
     });
+    if (child == null) {
+      ok = false;
+      complain = die ? ierror : iwarn;
+      complain('Null return from child-process.exec');
+    }
+    if (oncomplete != null) {
+      return oncomplete({
+        ok: ok,
+        code: code,
+        signal: signal,
+        out: out,
+        err: err
+      });
+    }
   }
   /**
     * @private
     */
   function sysdoSpawn(arg$){
-    var cmd, oncomplete, args, ref$, outList, errList, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outCapture, errCapture, slurp, ignoreNodeSyserr, keepTrailingNewline, syserrorFired, streamData, opts, cmdBin, cmdArgs, spawned, streamConfig, handleDataAsList, handleData, thisError;
+    var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outList, errList, slurp, ignoreNodeSyserr, keepTrailingNewline, invocationOpts, syserrorFired, streamData, that, cmdBin, cmdArgs, spawned, streamConfig, handleDataAsList, handleData, thisError;
     cmd = arg$.cmd, oncomplete = arg$.oncomplete, args = (ref$ = arg$.args) != null
       ? ref$
-      : [], outList = (ref$ = arg$.outList) != null ? ref$ : false, errList = (ref$ = arg$.errList) != null ? ref$ : false, outIgnore = (ref$ = arg$.outIgnore) != null ? ref$ : false, errIgnore = (ref$ = arg$.errIgnore) != null ? ref$ : false, die = (ref$ = arg$.die) != null
+      : [], outIgnore = (ref$ = arg$.outIgnore) != null ? ref$ : false, errIgnore = (ref$ = arg$.errIgnore) != null ? ref$ : false, die = (ref$ = arg$.die) != null
       ? ref$
       : Sys.die, verbose = (ref$ = arg$.verbose) != null
       ? ref$
@@ -789,17 +869,21 @@
       ? ref$
       : Sys.quietOnExit, sync = (ref$ = arg$.sync) != null
       ? ref$
-      : Sys.sync, outCapture = (ref$ = arg$.outCapture) != null
+      : Sys.sync, outPrint = (ref$ = arg$.outPrint) != null
       ? ref$
-      : Sys.outCapture, errCapture = (ref$ = arg$.errCapture) != null
+      : Sys.outPrint, errPrint = (ref$ = arg$.errPrint) != null
       ? ref$
-      : Sys.errCapture, slurp = (ref$ = arg$.slurp) != null
+      : Sys.errPrint, outList = (ref$ = arg$.outList) != null
+      ? ref$
+      : Sys.outList, errList = (ref$ = arg$.errList) != null
+      ? ref$
+      : Sys.errList, slurp = (ref$ = arg$.slurp) != null
       ? ref$
       : Sys.slurp, ignoreNodeSyserr = (ref$ = arg$.ignoreNodeSyserr) != null
       ? ref$
       : Sys.ignoreNodeSyserr, keepTrailingNewline = (ref$ = arg$.keepTrailingNewline) != null
       ? ref$
-      : Sys.keepTrailingNewline;
+      : Sys.keepTrailingNewline, invocationOpts = arg$.invocationOpts;
     if (global.globFs == null) {
       global.globFs = require('glob-fs');
     }
@@ -822,15 +906,14 @@
       iwarn("sys sync not implemented");
       return;
     }
-    if (oncomplete != null) {
-      if (toString$.call(oncomplete).slice(8, -1) !== 'Function') {
+    if ((that = oncomplete) != null) {
+      if (!isFunc(that)) {
         return ierror('bad call');
       }
     } else {
-      outCapture = false;
-      errCapture = false;
+      outPrint = true;
+      errPrint = true;
     }
-    opts = {};
     ref$ = function(){
       var parse, parsedBin, parsedArgs;
       parse = shellParse(cmd);
@@ -869,12 +952,12 @@
         return log(green(bullet()) + " " + printCmd);
       })();
     }
-    spawned = childProcess.spawn(cmdBin, cmdArgs, opts);
+    spawned = childProcess.spawn(cmdBin, cmdArgs, invocationOpts);
     streamConfig = {
       out: {
         ignore: outIgnore,
         spawnStream: spawned.stdout,
-        capture: outCapture,
+        print: outPrint,
         list: outList,
         which: 'out',
         procStream: process.stdout
@@ -882,7 +965,7 @@
       err: {
         ignore: errIgnore,
         spawnStream: spawned.stderr,
-        capture: errCapture,
+        print: errPrint,
         list: errList,
         which: 'err',
         procStream: process.stderr
@@ -910,14 +993,14 @@
       return each(partialize$.apply(stream, [stream.push, [void 8], [0]]), split);
     };
     handleData = function(strc, str){
-      if (strc.capture) {
+      if (strc.print) {
+        return strc.procStream.write(str);
+      } else {
         if (strc.list) {
           return handleDataAsList(strc, str);
         } else {
           return streamData[strc.which] += str;
         }
-      } else {
-        return strc.procStream.write(str);
       }
     };
     each(function(it){
@@ -987,14 +1070,13 @@
         }
       } else {
         if (oncomplete != null) {
-          if (oncomplete != null) {
-            return oncomplete({
-              ok: true,
-              code: code,
-              out: streamData.out,
-              err: streamData.err
-            });
-          }
+          return oncomplete({
+            ok: true,
+            signal: signal,
+            code: code,
+            out: streamData.out,
+            err: streamData.err
+          });
         }
       }
     });
@@ -1032,6 +1114,7 @@
       return oncomplete({
         ok: false,
         code: code,
+        signal: signal,
         out: out,
         err: err
       });

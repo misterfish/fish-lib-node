@@ -26,13 +26,16 @@ Identifier =
     util: {}
 
 Sys =
+    type: 'exec'
     die: false
     verbose: true
     quiet: false
     quiet-on-exit: false
     sync: false
-    err-capture: false
-    out-capture: true
+    err-print: true
+    out-print: false
+    err-list: false
+    out-list: false
     slurp: true
     ignore-node-syserr: false
     keep-trailing-newline: false
@@ -145,11 +148,11 @@ function bullet
 function ord
     return icomplain1 'Bad call' unless is-str it
     warn "Ignoring extra chars (got '#{ green it.substr 0, 1 }#{ bright-red it.substr 1}' " if it.length > 1
-    it.charCodeAt 0
+    it.char-code-at 0
 
 function chr
     return icomplain1 'Bad call' unless is-num it
-    String.fromCharCode it
+    String.from-char-code it
 
 function info
     prnt = [].slice.call arguments
@@ -163,30 +166,43 @@ function err-set opts
 function sys-set opts
     conf-set Sys, 'sys', opts
 
-# sys-ok <pass-through>, onok
-# sys-ok <pass-through>, onok, onnotok
-
-# No {opts} allowed in pass-through.
+/**
+ *
+ * Usage:
+ *
+ * sys-ok <pass-through>, onok
+ * sys-ok <pass-through>, onok, onnotok
+ *
+ * All args but onok and onnotok are simply passed through to sys. 
+ *
+ * All forms of sys are supported except the ones with an {opts} arg.
+ * 
+ * out and err are ignored and that can't be changed by the caller -- keep
+ * this function simple and more complex things can use sys-exec or sys-spawn
+ * directly.
+ */
 
 function sys-ok
     args-array = [].slice.call arguments
     onxxx = args-array.pop()
-    if typeof! onxxx is not 'Function'
+    if not is-func onxxx
         iwarn 'bad call'
         return
-    if typeof!(last args-array) is 'Function'
+    if is-func last args-array
         onok = args-array.pop()
         onnotok = onxxx
     else
         onok = onxxx
         onnotok = void
     opts =
-        oncomplete: ({ ok, out, err }) ->
+        oncomplete: ({ ok, code, signal }) ->
             if ok
                 if onok then onok()
             else
-                if onnotok then onnotok()
+                if onnotok then onnotok {code, signal}
         quiet: true
+        out-ignore: true
+        err-ignore: true
 
     args-array.push opts
     sys.apply this, args-array
@@ -250,11 +266,15 @@ function sys-ok
  *
  * (sync mode is currently not implemented).
  *
- * oncomplete is for success and error both.
- * params: ok, code, out, err
+ * oncomplete is for both success and error.
+ *
+ *     params: ok, code, signal, out, err
  *
  * If the command fails completely or dies on a signal, we print an error,
  * unless 'quiet' was given.
+ *
+ * On non-zero or signal we return with ierror or iwarn depending on 'die'.
+ * ierror is usually fatal but can be made non-fatal using Err.fatal.
  *
  * 'quiet' mixed with 'die' will be ignored.
  *
@@ -267,7 +287,8 @@ function sys-ok
  * idea if the output consists of filenames (because filenames can contain
  * newlines).
  *
- * 'ignore-node-syserr': hide ugly error messages from node (e.g. spawn ENOENT).
+ * 'invocation-opts': object values passed to underlying invocation (e.g. cwd, uid, etc.)
+ *
  *
  * options (spawn only):
  *
@@ -276,29 +297,41 @@ function sys-ok
  *
  * Otherwise:
  *
- *  If out-capture/err-capture is true, read everything into a scalar/list (depending
- *  on out-list/err-list) and pass it to oncomplete. If oncomplete is
- *  nothing then xxx-capture are set to false.
+ *  If out-print/err-print is true, print the data to its stream.
  *
- *  If out-capture/err-capture is false, print to stdout/stderr.
+ *  If out-print/err-print is false, read everything into a scalar/list
+ *  (depending on out-list/err-list) and pass it to oncomplete. If oncomplete
+ *  is nothing then out-print/err-print are set to true. You can use xxx-ignore
+ *  to really ignore them, or pass a no-op as oncomplete to listen and then throw
+ *  away.
  *
  * 'keep-trailing-newline': keep the trailing newline at the end of the streams.
  *
+ * 'ignore-node-syserr': hide ugly error messages from node (e.g. spawn ENOENT).
+ *
  * options (exec only):
  *
- * If out-capture/err-capture is true, pass the entire stdout and stderr as
- * a scalar or a list (depending on out-list/err-list) to oncomplete.
+ * If out-print/err-print is true, print the data on its stream. stdout and
+ * stderr are harvested by the underlying exec in all cases, and are passed to
+ * the oncomplete function in all cases, too.
  *
- * Otherwise, print to stdout/stderr.
+ * out-list/err-list do the same as for spawn.
  *
- * maxBuffer (bytes): node will kill the child process if stdout or stderr exceeds this size.
- *                    default: not set, meaning use node's default (currently 200K).
+ * invocation-opts.max-buffer (bytes): 
+ *     node will kill the child process if stdout or stderr exceeds this size.
+ *     default: not set, meaning use node's default (currently 200K).
+ * 
  */
 
-/* Alias for sys-exec
+/**
+ * Calls sys-exec or sys-spawn depending on Sys.type.
  */
 function sys
-    sys-exec.apply null arguments
+    if Sys.type is 'exec'
+        sys-exec.apply null arguments
+    else if Sys.type is 'spawn'
+        sys-spawn.apply null arguments
+    else return ierror 'bad Sys.type'
 
 function sys-exec
     args-array = [].slice.call arguments
@@ -637,9 +670,11 @@ function _color c, { warn-on-error } = {}
         'bright-cyan':  	96,
         reset:          	0,
     }[c]
+
     if not col?
         if warn-on-error then iwarn "Invalid color:" c
         return ''
+
     '[' + col + 'm'
 
 /**
@@ -650,34 +685,49 @@ function sysdo-exec {
     cmd,
     oncomplete,
     args = [],
-    out-list = false,
-    err-list = false,
 
     die = Sys.die,
     verbose = Sys.verbose,
     quiet = Sys.quiet,
     quiet-on-exit = Sys.quiet-on-exit,
     sync = Sys.sync,
-    out-capture = Sys.out-capture,
-    err-capture = Sys.err-capture,
+    out-print = Sys.out-print,
+    err-print = Sys.err-print,
+    out-list = Sys.out-list,
+    err-list = Sys.err-list,
 
-    max-buffer,
+    invocation-opts,
 
-    # ? XX
-    ignore-node-syserr = Sys.ignore-node-syserr,
 } # /sysdo args
 
-    opts = {} # max-buffer
-    opts.max-buffer = that if max-buffer?
-    child = child-process.exec cmd, opts, (err, stdout, stderr) ->
-        process.stderr.write stderr
-        if err
-            code = err.code
-            signal = err.signal # doesn't seem to work
-            error "Err: #err Code #code Signal #signal"
-        process.stdout.write stdout
+    ok = true
+    child = child-process.exec cmd, invocation-opts, (error, out, err) ->
+        process.stderr.write err if err-print
+        process.stdout.write out if out-print
 
+        if error
+            signal = void
+            code = error.code
+            if code is 'ENOENT' # no shell
+                warn 'Couldn\'t spawn a shell!'
+            else
+                signal = error.signal # doesn't seem to work
+            # calls oncomplete
+            return syserror { cmd, code, signal, oncomplete, out, err, die, quiet, quiet-on-exit }
 
+        if err-list then
+            err .= split // \n //
+        if out-list then
+            out .= split // \n //
+
+    if not child?
+        ok = false
+        complain = if die then ierror else iwarn
+        complain 'Null return from child-process.exec'
+
+    oncomplete { ok, code, signal, out, err } if oncomplete?
+
+# end sysdo-exec
 
 /**
   * @private
@@ -687,8 +737,7 @@ function sysdo-spawn {
     cmd,
     oncomplete,
     args = [],
-    out-list = false,
-    err-list = false,
+
     out-ignore = false,
     err-ignore = false,
 
@@ -697,12 +746,16 @@ function sysdo-spawn {
     quiet = Sys.quiet,
     quiet-on-exit = Sys.quiet-on-exit,
     sync = Sys.sync,
-    out-capture = Sys.out-capture,
-    err-capture = Sys.err-capture,
+    out-print = Sys.out-print,
+    err-print = Sys.err-print,
+    out-list = Sys.out-list,
+    err-list = Sys.err-list,
     slurp = Sys.slurp,
 
     ignore-node-syserr = Sys.ignore-node-syserr,
     keep-trailing-newline = Sys.keep-trailing-newline,
+
+    invocation-opts,
 } # /sysdo args
 
     global.glob-fs = require 'glob-fs' unless global.glob-fs?
@@ -721,12 +774,11 @@ function sysdo-spawn {
         return
 
     if oncomplete?
-        return ierror 'bad call' unless typeof! oncomplete is 'Function'
+        return ierror 'bad call' unless is-func that
     else
-        out-capture = false
-        err-capture = false
+        out-print = true
+        err-print = true
 
-    opts = {} # cwd, env, stdio, detached, uid, gid (unused)
     [cmd-bin, cmd-args] = do ->
         parse = shell-parse cmd # split into shell words
         # note that we don't expand globs in the first token.
@@ -754,20 +806,20 @@ function sysdo-spawn {
         print-cmd = join ' ', [cmd] ++ map (shell-quote), args
         log "#{ green bullet! } #print-cmd"
 
-    spawned = child-process.spawn cmd-bin, cmd-args, opts
+    spawned = child-process.spawn cmd-bin, cmd-args, invocation-opts
 
     stream-config =
         out:
             ignore: out-ignore
             spawn-stream: spawned.stdout
-            capture: out-capture
+            print: out-print
             list: out-list
             which: 'out'
             proc-stream: process.stdout
         err:
             ignore: err-ignore
             spawn-stream: spawned.stderr
-            capture: err-capture
+            print: err-print
             list: err-list
             which: 'err'
             proc-stream: process.stderr
@@ -803,15 +855,15 @@ function sysdo-spawn {
 
     # stream-config obj, string to handle
     handle-data = (strc, str) ->
-        if strc.capture
+        if strc.print
+            strc.proc-stream.write str
+        else
             if strc.list
                 handle-data-as-list strc, str
             else
                 # i.e. out += str or err += str (be careful
                 # not to store by value)
                 stream-data[strc.which] += str
-        else
-            strc.proc-stream.write str
 
     # it = stream-config obj
     values stream-config |> each ->
@@ -854,10 +906,10 @@ function sysdo-spawn {
 
     this-error = (args) ->
         syserror merge-objects args, {
-            cmd, oncomplete
-            die, quiet, quiet-on-exit
-            out: stream-data.out
-            err: stream-data.err
+            cmd, oncomplete,
+            die, quiet, quiet-on-exit,
+            out: stream-data.out,
+            err: stream-data.err,
         }
 
     # Not fired if killed by a signal.
@@ -876,7 +928,7 @@ function sysdo-spawn {
 
         if not syserror-fired
             syserror-fired = true
-            this-error {}
+            return this-error {}
 
     # exit is when the process exits, but the streams might still be
     # open.
@@ -888,12 +940,14 @@ function sysdo-spawn {
         if code is not 0
             if not syserror-fired
                 syserror-fired = true
-                this-error {  code, signal }
+                # will eventually call oncomplete, too.
+                return this-error { code, signal }
         else
-            if oncomplete?
-                oncomplete { ok: true, code, stream-data.out, stream-data.err } if oncomplete?
+            oncomplete { ok: true, signal, code, stream-data.out, stream-data.err } if oncomplete?
 
     spawned
+
+# end sysdo-spawn
 
 /**
  * @private
@@ -925,7 +979,9 @@ function syserror ({ cmd, code, signal, oncomplete, out, err, die, quiet, quiet-
         else
             warn str unless quiet
 
-    oncomplete { ok: false, code, out, err } if oncomplete?
+    oncomplete { ok: false, code, signal, out, err } if oncomplete?
+
+# end syserror
 
 /**
  * @private
