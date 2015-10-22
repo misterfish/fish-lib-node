@@ -844,22 +844,26 @@
         err = err.split(/\n/);
       }
       if (outList) {
-        return out = out.split(/\n/);
+        out = out.split(/\n/);
+      }
+      if (oncomplete != null) {
+        return oncomplete({
+          ok: true,
+          out: out,
+          err: err
+        });
       }
     });
     if (child == null) {
-      ok = false;
       complain = die ? ierror : iwarn;
       complain('Null return from child-process.exec');
-    }
-    if (oncomplete != null) {
-      return oncomplete({
-        ok: ok,
-        code: code,
-        signal: signal,
-        out: out,
-        err: err
-      });
+      if (oncomplete != null) {
+        return oncomplete({
+          ok: false,
+          out: out,
+          err: err
+        });
+      }
     }
   }
   /**

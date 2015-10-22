@@ -722,7 +722,7 @@ function sysdo-exec {
             if code is 'ENOENT' # no shell
                 warn 'Couldn\'t spawn a shell!'
             else
-                signal = error.signal # doesn't seem to work
+                signal = error.signal # not sure if node is actually setting this in all cases.
             # calls oncomplete
             return syserror { cmd, code, signal, oncomplete, out, err, die, quiet, quiet-on-exit }
 
@@ -731,12 +731,12 @@ function sysdo-exec {
         if out-list then
             out .= split // \n //
 
+        oncomplete { ok: true, out, err } if oncomplete?
+
     if not child?
-        ok = false
         complain = if die then ierror else iwarn
         complain 'Null return from child-process.exec'
-
-    oncomplete { ok, code, signal, out, err } if oncomplete?
+        oncomplete { ok: false, out, err } if oncomplete?
 
 # end sysdo-exec
 
