@@ -9,12 +9,29 @@
  * Author: Allen Haim <allen@netherrealm.net>
  */
 (function(){
-  var childProcess, ref$, curry, join, last, map, each, compact, keys, values, shellQuoteModule, sprintf, BULLETS, Identifier, Sys, Err, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, _, ident, k, v, slice$ = [].slice, toString$ = {}.toString, split$ = ''.split;
+  var childProcess, ref$, curry, join, last, map, each, compact, keys, values, shellQuoteModule, sprintf, BULLETS, Bullet, Identifier, Sys, Err, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, _, ident, k, v, slice$ = [].slice, toString$ = {}.toString, split$ = ''.split;
   childProcess = require('child_process');
   ref$ = require("prelude-ls"), curry = ref$.curry, join = ref$.join, last = ref$.last, map = ref$.map, each = ref$.each, compact = ref$.compact, keys = ref$.keys, values = ref$.values;
   shellQuoteModule = require('shell-quote');
   sprintf = require('sprintf');
-  BULLETS = ['꣐', '⩕', '٭', '᳅', '𝄢', '𝄓', '𝄋', '𝁐', 'ᨁ'];
+  BULLETS = {
+    ghost: '꣐',
+    star: '٭',
+    bassClef: '𝄢',
+    parallelLines: '𝄓',
+    segno: '𝄋',
+    ypsili: '𝁐',
+    straggismata: '𝁄',
+    petasti: '𝁉',
+    paraklitiki: '𝀉',
+    dipli: '𝀒'
+  };
+  Bullet = {
+    vals: void 8,
+    str: void 8,
+    indent: 0,
+    spacing: 1
+  };
   Identifier = {
     main: {},
     color: {},
@@ -170,8 +187,18 @@
     }
     return resultObj$;
   }
+  /**
+   * Return Bullet.str if it's been set, otherwise a random bullet.
+   */
   function bullet(){
-    return BULLETS[Math.floor(Math.random() * BULLETS.length)];
+    var that;
+    if ((that = Bullet.str) != null) {
+      return that;
+    }
+    if (Bullet.vals == null) {
+      Bullet.vals = values(BULLETS);
+    }
+    return Bullet.vals[Math.floor(Math.random() * Bullet.vals.length)];
   }
   function ord(it){
     if (!isStr(it)) {
@@ -189,9 +216,15 @@
     return String.fromCharCode(it);
   }
   function info(){
-    var prnt;
+    var prnt, ind, spa, bul;
+    if (!arguments.length) {
+      return;
+    }
     prnt = [].slice.call(arguments);
-    prnt.unshift(blue(bullet()));
+    ind = repeatString$(' ', Bullet.indent);
+    spa = repeatString$(' ', Bullet.spacing);
+    bul = blue(bullet());
+    prnt[0] = ind + bul + spa + prnt[0];
     console.log.apply(console, prnt);
   }
   function errSet(opts){
@@ -199,6 +232,26 @@
   }
   function sysSet(opts){
     return confSet(Sys, 'sys', opts);
+  }
+  function bulletSet(opts){
+    var that, ref$, s;
+    if ((that = opts.str) != null) {
+      Bullet.str = that;
+    } else if ((that = opts.key) != null) {
+      Bullet.str = (ref$ = BULLETS[that]) != null ? ref$ : ' ';
+    }
+    if ((s = opts.spacing) != null) {
+      if (!isNum(s)) {
+        return iwarn('bad spacing');
+      }
+      Bullet.spacing = s;
+    }
+    if ((s = opts.indent) != null) {
+      if (!isNum(s)) {
+        return iwarn('bad indent');
+      }
+      return Bullet.indent = s;
+    }
   }
   /**
    *
@@ -963,9 +1016,12 @@
     }(), cmdBin = ref$[0], cmdArgs = ref$[1];
     if (verbose) {
       (function(){
-        var printCmd;
+        var printCmd, ind, spa, bul;
         printCmd = join(' ', [cmd].concat(map(shellQuote, args)));
-        return log(green(bullet()) + " " + printCmd);
+        ind = repeatString$(' ', Bullet.indent);
+        spa = repeatString$(' ', Bullet.spacing);
+        bul = green(bullet());
+        return log(ind + "" + bul + spa + printCmd);
       })();
     }
     spawned = childProcess.spawn(cmdBin, cmdArgs, invocationOpts);
@@ -1211,6 +1267,8 @@
    * @private
    *
    * All error and warn functions route through this underlying one.
+   *
+   * msg: array.
    */
   function pcomplain(arg$){
     var msg, internal, error, stackTrace, code, stackRewind, ref$, stack, funcname, filename, lineNum, bulletColor;
@@ -1236,6 +1294,9 @@
         return ["«unknown-file»", "«unknown-line»"];
       }
     }(), funcname = ref$[0], filename = ref$[1], lineNum = ref$[2];
+    if (!isArray(msg)) {
+      return iwarn('bad param msg');
+    }
     msg = map(function(it){
       if (isObj(it)) {
         return util.inspect(it);
@@ -1261,11 +1322,17 @@
     } else {
       bulletColor = brightRed;
     }
-    msg.unshift(bulletColor([
-      bullet(), {
-        warnOnError: false
-      }
-    ]));
+    msg[0] = function(){
+      var ind, spa, bul;
+      ind = repeatString$(' ', Bullet.indent);
+      spa = repeatString$(' ', Bullet.spacing);
+      bul = bulletColor([
+        bullet(), {
+          warnOnError: false
+        }
+      ]);
+      return ind + bul + spa + msg[0];
+    }();
     if (internal) {
       msg.push("(" + (yellow([
         filename, {
@@ -1326,6 +1393,7 @@
     sysExec: sysExec,
     sysSpawn: sysSpawn,
     sysOk: sysOk,
+    bulletSet: bulletSet,
     getopt: getopt,
     sprintf: sprintf
   };
@@ -1374,6 +1442,10 @@
       module.exports[k] = v;
     }
   }
+  function repeatString$(str, n){
+    for (var r = ''; n > 0; (n >>= 1) && (str += str)) if (n & 1) r += str;
+    return r;
+  }
   function partialize$(f, args, where){
     var context = this;
     return function(){
@@ -1384,9 +1456,5 @@
       return len < wlen && len ?
         partialize$.apply(context, [f, ta, tw]) : f.apply(context, ta);
     };
-  }
-  function repeatString$(str, n){
-    for (var r = ''; n > 0; (n >>= 1) && (str += str)) if (n & 1) r += str;
-    return r;
   }
 }).call(this);
