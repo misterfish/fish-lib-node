@@ -18,7 +18,23 @@ sprintf = require 'sprintf'
 # util = void
 # glob-fs = void
 
-BULLETS = <[ ꣐ ⩕ ٭ ᳅ 𝄢 𝄓 𝄋 𝁐 ᨁ  ]>
+BULLETS =
+    ghost: '꣐'
+    star: '٭'
+    bass-clef: '𝄢'
+    parallel-lines: '𝄓'
+    segno: '𝄋'
+    ypsili: '𝁐'
+    straggismata: '𝁄'
+    petasti: '𝁉'
+    paraklitiki: '𝀉'
+    dipli: '𝀒'
+
+Bullet =
+    vals: void # values of BULLETS
+    str: void # the bullet
+    indent: 0 # before the bullet
+    spacing: 1 # between the bullet and the text
 
 Identifier =
     main: {}
@@ -144,9 +160,13 @@ function shuffle input
 function merge-objects
     { [k, v] for obj in arguments for k, v of obj when typeof! obj is 'Object' }
 
-
+/**
+ * Return Bullet.str if it's been set, otherwise a random bullet.
+ */
 function bullet
-    BULLETS[ Math.floor Math.random! * BULLETS.length ]
+    return that if Bullet.str?
+    Bullet.vals := values BULLETS unless Bullet.vals?
+    Bullet.vals[ Math.floor Math.random() * Bullet.vals.length ]
 
 function ord
     return icomplain1 'Bad call' unless is-str it
@@ -158,8 +178,12 @@ function chr
     String.fromCharCode it
 
 function info
+    return unless arguments.length
     prnt = [].slice.call arguments
-    prnt.unshift blue bullet!
+    ind = ' ' * Bullet.indent
+    spa = ' ' * Bullet.spacing
+    bul = blue bullet()
+    prnt.0 = ind + bul + spa + prnt.0
     console.log.apply console, prnt
     void
 
@@ -168,6 +192,18 @@ function err-set opts
 
 function sys-set opts
     conf-set Sys, 'sys', opts
+
+function bullet-set opts
+    if opts.str?
+        Bullet.str = that
+    else if opts.key?
+        Bullet.str = BULLETS[that] ? ' '
+    if (s = opts.spacing)?
+        return iwarn 'bad spacing' unless is-num s
+        Bullet.spacing = s
+    if (s = opts.indent)?
+        return iwarn 'bad indent' unless is-num s
+        Bullet.indent = s
 
 # sys-ok <pass-through>, onok
 # sys-ok <pass-through>, onok, onnotok
@@ -612,7 +648,10 @@ function sysdo {
 
     if verbose then do ->
         print-cmd = join ' ', [cmd] ++ map (shell-quote), args
-        log "#{ green bullet! } #print-cmd"
+        ind = ' ' * Bullet.indent
+        spa = ' ' * Bullet.spacing
+        bul = green bullet()
+        log "#ind#bul#spa#print-cmd"
 
     spawned = child-process.spawn cmd-bin, cmd-args, opts
 
@@ -817,6 +856,8 @@ function icomplain1 ...msg
  * @private
  *
  * All error and warn functions route through this underlying one.
+ *
+ * msg: array.
  */
 function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
     global.util := require 'util' unless global.util?
@@ -843,6 +884,7 @@ function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
         else
             ["«unknown-file»", "«unknown-line»"]
 
+    return iwarn 'bad param msg' unless is-array msg
     msg = map do
         -> if is-obj it then util.inspect it else it
         msg
@@ -863,7 +905,11 @@ function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
     else
         bullet-color = bright-red
 
-    msg.unshift bullet-color [bullet!, {-warn-on-error}]
+    msg.0 = do ->
+        ind = ' ' * Bullet.indent
+        spa = ' ' * Bullet.spacing
+        bul = bullet-color [bullet!, {-warn-on-error}]
+        ind + bul + spa + msg.0
 
     # (file:line)
     if internal
@@ -904,6 +950,7 @@ Identifier.main = {
     err-set, iwarn, ierror, warn, error,
     icomplain, icomplain1,
     sys-set, sys, sys-ok,
+    bullet-set,
     getopt, sprintf,
 }
 
