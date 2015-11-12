@@ -16,7 +16,9 @@
     "glob-fs": "^0.1.6",
     "nopt": "^3.0.3",
     "prelude-ls": "^1.1.2",
-    "shell-quote": "^1.4.3",
     "sprintf": "^0.1.5"
+  },
+  "devDependencies": {
+    "jasmine": "^2.3.2",
   }
 }
