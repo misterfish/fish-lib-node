@@ -11,7 +11,7 @@
 child-process = require 'child_process'
 
 { curry, join, last, map, each, compact, keys, values } = require "prelude-ls"
-shell-quote-module = require 'shell-quote'
+#shell-quote-module = require 'shell-quote'
 sprintf = require 'sprintf'
 
 # required when needed.
@@ -83,8 +83,8 @@ bright-cyan = (curry color) 'bright-cyan'
 magenta = (curry color) 'magenta'
 bright-magenta = (curry color) 'bright-magenta'
 
-function shell-parse
-    shell-quote-module.parse.apply this, arguments
+#function shell-parse
+#    shell-quote-module.parse.apply this, arguments
 
 function shell-quote arg
     if arg == // [ ! $ & * ? ( ) ` < > | \s ] //
@@ -839,7 +839,9 @@ function sysdo-spawn {
         err-print = true
 
     [cmd-bin, cmd-args] = do ->
-        parse = shell-parse cmd # split into shell words
+        ...
+        #parse = shell-parse cmd # split into shell words
+
         # note that we don't expand globs in the first token.
         parsed-bin = parse.shift()
         parsed-args = []
@@ -1186,7 +1188,7 @@ function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
 
 Identifier.main = {
     import-all, import-kind,
-    shell-quote, shell-parse,
+    shell-quote,
     ord, chr, bullet, log, info,
     err-set, iwarn, ierror, warn, error,
     complain, complain1, icomplain, icomplain1,

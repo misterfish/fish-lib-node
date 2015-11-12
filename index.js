@@ -9,10 +9,9 @@
  * Author: Allen Haim <allen@netherrealm.net>
  */
 (function(){
-  var childProcess, ref$, curry, join, last, map, each, compact, keys, values, shellQuoteModule, sprintf, BULLETS, Bullet, Identifier, Sys, Err, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, _, ident, k, v, slice$ = [].slice, toString$ = {}.toString, split$ = ''.split;
+  var childProcess, ref$, curry, join, last, map, each, compact, keys, values, sprintf, BULLETS, Bullet, Identifier, Sys, Err, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, _, ident, k, v, slice$ = [].slice, toString$ = {}.toString, split$ = ''.split;
   childProcess = require('child_process');
   ref$ = require("prelude-ls"), curry = ref$.curry, join = ref$.join, last = ref$.last, map = ref$.map, each = ref$.each, compact = ref$.compact, keys = ref$.keys, values = ref$.values;
-  shellQuoteModule = require('shell-quote');
   sprintf = require('sprintf');
   BULLETS = {
     ghost: '꣐',
@@ -68,9 +67,6 @@
   brightCyan = curry(color)('bright-cyan');
   magenta = curry(color)('magenta');
   brightMagenta = curry(color)('bright-magenta');
-  function shellParse(){
-    return shellQuoteModule.parse.apply(this, arguments);
-  }
   function shellQuote(arg){
     if (/[!$&*?()`<>|\s]/.exec(arg)) {
       arg = arg.replace(/'/g, "'\\''");
@@ -984,8 +980,8 @@
       errPrint = true;
     }
     ref$ = function(){
-      var parse, parsedBin, parsedArgs;
-      parse = shellParse(cmd);
+      var parsedBin, parsedArgs;
+      throw Error('unimplemented');
       parsedBin = parse.shift();
       parsedArgs = [];
       each(function(it){
@@ -1373,7 +1369,6 @@
     importAll: importAll,
     importKind: importKind,
     shellQuote: shellQuote,
-    shellParse: shellParse,
     ord: ord,
     chr: chr,
     bullet: bullet,
