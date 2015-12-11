@@ -1,2 +1,2 @@
-# fish-lib-ls
-Useful stuff for LiveScript projects.
+# fish-lib-node
+Useful stuff for working with node.js.
