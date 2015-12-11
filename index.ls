@@ -1,7 +1,7 @@
 /*
- * Useful stuff for writing in LiveScript.
+ * Useful stuff for working with node.js.
  *
- * Source: misterfish@github/fish-lib-ls
+ * Source: misterfish@github/fish-lib-node
  *
  * License: GPL 2.0
  *
@@ -304,6 +304,10 @@ function sys
 
     sysdo opts
 
+# --- returns an array containing all positional args.
+function array
+    [.. for &]
+
 function is-str
     is-string it
 
@@ -395,12 +399,12 @@ function import-all target
  * Expand elements of kinds if they are arrays.
  * So this is called as:
  * 
- * fish-lib-ls.import-kind global,
+ * fish-lib-node.import-kind global,
  *    <[ main color util ]>
  * 
  * or
  * 
- * fish-lib-ls.import-kind global,
+ * fish-lib-node.import-kind global,
  *    'main' 'color' 'util'
  */
 
@@ -914,7 +918,7 @@ Identifier.color = {
 }
 
 Identifier.util = {
-    merge-objects, times, range,
+    array, merge-objects, times, range,
     shuffle,
     is-int, is-integer, is-positive-int, is-non-negative-int, is-num,
     is-number, is-array, is-arr, is-obj, is-object, is-str, is-string,
