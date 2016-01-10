@@ -20,8 +20,10 @@ our = {
     confSet: void 8
   },
   opts: {
-    fatal: true,
-    printStackTrace: false
+    printStackTrace: void 8,
+    complain: 'error',
+    error: 'fatal',
+    apiError: 'fatal'
   }
 };
 function icomplain(){
@@ -33,10 +35,10 @@ function icomplain(){
   } else {
     opts = {};
   }
-  func = our.opts.fatal ? ierror : iwarn;
+  func = our.opts.complain === 'error' ? ierror : iwarn;
   opts.stackRewind == null && (opts.stackRewind = 0);
   opts.stackRewind += 2;
-  return func(msg, opts);
+  return func.apply(null, msg.concat([opts]));
 }
 function complain(){
   var msg, opts, func;
@@ -47,7 +49,7 @@ function complain(){
   } else {
     opts = {};
   }
-  func = our.opts.fatal ? error : warn;
+  func = our.opts.complain === 'error' ? error : warn;
   opts.stackRewind == null && (opts.stackRewind = 0);
   opts.stackRewind += 2;
   return func.apply(null, msg.concat([opts]));
@@ -61,7 +63,7 @@ function iwarn(){
   } else {
     opts = {};
   }
-  return pcomplain((opts.msg = msg, opts.type = 'internal', opts.error = false, opts));
+  return pcomplain((opts.msg = msg, opts.type = 'iwarn', opts.internal = true, opts));
 }
 function ierror(){
   var msg, opts;
@@ -72,7 +74,7 @@ function ierror(){
   } else {
     opts = {};
   }
-  return pcomplain((opts.msg = msg, opts.type = 'internal', opts.error = true, opts));
+  return pcomplain((opts.msg = msg, opts.type = 'ierror', opts.internal = true, opts));
 }
 function warn(){
   var msg, opts;
@@ -83,7 +85,7 @@ function warn(){
   } else {
     opts = {};
   }
-  return pcomplain((opts.msg = msg, opts.type = 'normal', opts.error = false, opts));
+  return pcomplain((opts.msg = msg, opts.type = 'warn', opts.internal = false, opts));
 }
 function error(){
   var msg, opts;
@@ -94,7 +96,7 @@ function error(){
   } else {
     opts = {};
   }
-  return pcomplain((opts.msg = msg, opts.type = 'normal', opts.error = true, opts));
+  return pcomplain((opts.msg = msg, opts.type = 'error', opts.internal = false, opts));
 }
 function aerror(){
   var msg, opts;
@@ -105,7 +107,7 @@ function aerror(){
   } else {
     opts = {};
   }
-  return pcomplain((opts.msg = msg, opts.type = 'api', opts));
+  return pcomplain((opts.msg = msg, opts.type = 'aerror', opts.internal = false, opts));
 }
 function init(arg$){
   var pkg, ref$;
@@ -123,38 +125,13 @@ function errSet(opts){
     name: 'err'
   });
 }
-"# --- like calling icomplain msg, stack-rewind: 1\n#\n# (since it's another call on the stack, stack-rewind is 2).\n\nfunction icomplain1 ...msg\n    opts = last msg\n    if is-obj opts then msg.pop() else opts = {}\n    opts.stack-rewind = 2\n    icomplain msg, opts\n\n/*\n * Like calling complain msg, stack-rewind: 1\n * However since it's another call on the stack, it's 2 in the call.\n * \n */\nfunction complain1 ...msg\n    opts = last msg\n    if is-obj opts then msg.pop() else opts = {}\n    opts.stack-rewind = 2\n    complain msg, opts";
-/**
- * @private
- *
- * All error and warn functions route through this underlying one.
- *
- * msg: array.
- */
 function pcomplain(arg$){
-  var msg, type, error, printStackTrace, code, stackRewind, ref$, stack, funcname, filename, lineNum, printFileAndLine, bulletColor;
-  msg = arg$.msg, type = arg$.type, error = arg$.error, printStackTrace = arg$.printStackTrace, code = arg$.code, stackRewind = (ref$ = arg$.stackRewind) != null ? ref$ : 0;
+  var msg, type, internal, printStackTrace, code, stackRewind, ref$, printStackTraceOpt, printFileAndLine, error, allow, that, bulletColor, stack, funcname, filename, lineNum;
+  msg = arg$.msg, type = arg$.type, internal = arg$.internal, printStackTrace = arg$.printStackTrace, code = arg$.code, stackRewind = (ref$ = arg$.stackRewind) != null ? ref$ : 0;
   if (!util) {
     util = require('util');
   }
-  printStackTrace == null && (printStackTrace = our.opts.printStackTrace);
-  stack = (new Error).stack;
-  if (stack == null) {
-    stack = '';
-  }
-  stack = stack.replace(/^\s*\S+\s+/, '   ');
-  ref$ = function(){
-    var regex, myStack, m;
-    regex = repeatString$(".*\n", 2 + stackRewind);
-    myStack = stack.replace(RegExp('^' + regex), '');
-    if (m = myStack.match(/^\s+at\s+(\S+)\s*\((.+?):(\d+):\d+\)/)) {
-      return [m[1], m[2], m[3]];
-    } else if (m = myStack.match(/^\s+at\s+(.+?):(\d+):\d+/)) {
-      return [void 8, m[1], m[2]];
-    } else {
-      return ["«unknown-file»", "«unknown-line»"];
-    }
-  }(), funcname = ref$[0], filename = ref$[1], lineNum = ref$[2];
+  printStackTraceOpt = printStackTrace;
   if (!isArr(msg)) {
     return iwarn('bad param msg');
   }
@@ -166,29 +143,61 @@ function pcomplain(arg$){
     }
   }, msg);
   printFileAndLine = false;
-  if (type === 'api') {
+  if (type === 'aerror') {
+    if (!msg.length) {
+      msg.push("bad call.");
+    }
     msg.unshift("Api error:");
     error = true;
     printFileAndLine = true;
-  } else if (type === 'internal') {
-    if (error) {
-      msg.unshift("Internal error:");
-    } else {
-      msg.unshift("Internal warning:");
+    printStackTrace = true;
+    allow = our.opts.apiError === 'allow';
+  } else if (type === 'ierror') {
+    if (!msg.length) {
+      msg.push("something's wrong.");
     }
+    msg.unshift("Internal error:");
     printFileAndLine = true;
-  } else {
-    if (error) {
-      msg.unshift("Error:");
-    } else {
-      msg.unshift("Warning:");
+    printStackTrace = true;
+    allow = our.opts.error === 'allow';
+  } else if (type === 'iwarn') {
+    if (!msg.length) {
+      msg.push("something's wrong.");
     }
+    msg.unshift("Internal warning:");
+    printFileAndLine = true;
+    printStackTrace = true;
+    allow = true;
+  } else if (type === 'error') {
+    if (!msg.length) {
+      msg.push("something's wrong.");
+    }
+    msg.unshift("Error:");
     printFileAndLine = false;
+    printStackTrace = false;
+    allow = our.opts.error === 'allow';
+  } else if (type === 'warn') {
+    if (!msg.length) {
+      msg.push("something's wrong.");
+    }
+    msg.unshift("Warning:");
+    printFileAndLine = false;
+    printStackTrace = false;
+    allow = true;
   }
-  if (error) {
-    bulletColor = red;
-  } else {
+  if ((that = printStackTraceOpt) != null) {
+    printStackTrace = that;
+  }
+  if ((that = our.opts.printStackTrace) != null) {
+    printStackTrace = that;
+  }
+  if (allow) {
     bulletColor = brightRed;
+  } else {
+    bulletColor = red;
+  }
+  if (printStackTrace || printFileAndLine) {
+    ref$ = getStack(stackRewind), stack = ref$[0], funcname = ref$[1], filename = ref$[2], lineNum = ref$[3];
   }
   msg[0] = function(){
     var ind, spa, bul;
@@ -232,10 +241,31 @@ function pcomplain(arg$){
   }
   msg.push("\n");
   process.stderr.write(join(' ', msg));
-  if (error) {
+  if (!allow) {
     code == null && (code = 1);
     process.exit(code);
   }
+}
+function getStack(stackRewind){
+  var stack, ref$, funcname, filename, lineNum;
+  stack = (new Error).stack;
+  if (stack == null) {
+    stack = '';
+  }
+  stack = stack.replace(/^\s*\S+\s+/, '   ');
+  ref$ = function(){
+    var regex, myStack, m;
+    regex = repeatString$(".*\n", 3 + stackRewind);
+    myStack = stack.replace(RegExp('^' + regex), '');
+    if (m = myStack.match(/^\s+at\s+(\S+)\s*\((.+?):(\d+):\d+\)/)) {
+      return [m[1], m[2], m[3]];
+    } else if (m = myStack.match(/^\s+at\s+(.+?):(\d+):\d+/)) {
+      return [void 8, m[1], m[2]];
+    } else {
+      return ["«unknown-file»", "«unknown-line»"];
+    }
+  }(), funcname = ref$[0], filename = ref$[1], lineNum = ref$[2];
+  return [stack, funcname, filename, lineNum];
 }
 function import$(obj, src){
   var own = {}.hasOwnProperty;

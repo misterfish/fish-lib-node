@@ -31,18 +31,47 @@ our =
         conf-set: void
 
     opts:
-        # Fatal is used for the complain family of functions to decide whether
-        # to route through (i)warn or (i)complain.
-        # It is not used to make (i)error non-fatal.
-        # This module never calls (i)error, leaving it up to the caller to die
-        # The only exception is the sys family of functions, which take a 'die'
-        # flag (false by default).
-        # At some point the iwarn calls for things like invalid function calls
-        # might get upgraded to icomplain calls, so they can optionally die.
-        # our.opts.fatal might also get set to false by default at some point, so be
-        # sure to set it if you really depend on it.
-        fatal: true
-        print-stack-trace: false
+        # --- honored by all error and warning functions and can be used to
+        # force printing or suppressing of the stack trace.
+        #
+        # if it's not set, the value in the options object is used, and if
+        # that's not set, stack trace is printed on aerror(), iwarn() and
+        # ierror(), and not on warn() and error().
+
+        print-stack-trace: void
+
+        # --- 'warn' | 'error'
+        #
+        # this controls whether the (i)complain() functions route through
+        # warn() or through error().
+
+        complain: 'error'
+
+        # --- 'fatal' | 'throw' | 'allow'
+        #
+        # you can set this to 'allow' to make the error() function not exit,
+        # but you probably don't want to -- error() is meant to be used to
+        # mean serious errors.
+        #
+        # in fish-lib error() is never preceded by return -- if for some
+        # reason you do set this to 'allow' you probably want to do it for
+        # short bursts of code and make sure to call 'return error()'
+        # instead of just 'error()'
+        #
+        # if it's set to 'throw' it will throw an exception with the given
+        # message.
+
+        error: 'fatal'
+
+        # --- 'fatal' | 'throw' | 'allow'
+        #
+        # in the case of api errors it could be useful to set it to 'allow'.
+        #
+        # 'throw' works the same as for error().
+        #
+        # in fish-lib aerror() is always preceded by return.
+
+        api-error: 'fatal'
 
 # --- checks our.opts.fatal and routes through either ierror or iwarn.
 #
@@ -53,10 +82,10 @@ our =
 function icomplain ...msg
     opts = last msg
     if is-obj opts then msg.pop() else opts = {}
-    func = if our.opts.fatal then ierror else iwarn
+    func = if our.opts.complain is 'error' then ierror else iwarn
     opts.stack-rewind ?= 0
     opts.stack-rewind += 2
-    func msg, opts
+    func.apply null msg ++ [opts]
 
 # --- checks our.opts.fatal and routes through either error or warn.
 #
@@ -67,7 +96,7 @@ function icomplain ...msg
 function complain ...msg
     opts = last msg
     if is-obj opts then msg.pop() else opts = {}
-    func = if our.opts.fatal then error else warn
+    func = if our.opts.complain is 'error' then error else warn
     opts.stack-rewind ?= 0
     opts.stack-rewind += 2
     func.apply null msg ++ [opts]
@@ -82,8 +111,8 @@ function iwarn ...msg
 
     pcomplain opts <<<
         msg: msg
-        type: 'internal'
-        error: false
+        type: 'iwarn'
+        internal: true
 
 # --- programmer errors.
 #
@@ -95,8 +124,8 @@ function ierror ...msg
 
     pcomplain opts <<<
         msg: msg
-        type: 'internal'
-        error: true
+        type: 'ierror'
+        internal: true
 
 # --- user/system warnings.
 #
@@ -108,8 +137,8 @@ function warn ...msg
 
     pcomplain opts <<<
         msg: msg
-        type: 'normal'
-        error: false
+        type: 'warn'
+        internal: false
 
 # --- user/system errors.
 #
@@ -121,8 +150,8 @@ function error ...msg
 
     pcomplain opts <<<
         msg: msg
-        type: 'normal'
-        error: true
+        type: 'error'
+        internal: false
 
 # --- api errors.
 #
@@ -134,7 +163,8 @@ function aerror ...msg
 
     pcomplain opts <<<
         msg: msg
-        type: 'api'
+        type: 'aerror'
+        internal: false
 
 function init { pkg = {}, } = {}
     # --- clone args; noop if []
@@ -146,65 +176,14 @@ function err-set opts
         target: our.opts
         name: 'err'
 
-"""
-# --- like calling icomplain msg, stack-rewind: 1
+# --- all error and warn functions route through this underlying one.
 #
-# (since it's another call on the stack, stack-rewind is 2).
+# @private
 
-function icomplain1 ...msg
-    opts = last msg
-    if is-obj opts then msg.pop() else opts = {}
-    opts.stack-rewind = 2
-    icomplain msg, opts
-
-/*
- * Like calling complain msg, stack-rewind: 1
- * However since it's another call on the stack, it's 2 in the call.
- * 
- */
-function complain1 ...msg
-    opts = last msg
-    if is-obj opts then msg.pop() else opts = {}
-    opts.stack-rewind = 2
-    complain msg, opts
-"""
-
-/**
- * @private
- *
- * All error and warn functions route through this underlying one.
- *
- * msg: array.
- */
-function pcomplain { msg, type, error, print-stack-trace, code, stack-rewind = 0 }
+function pcomplain { msg, type, internal, print-stack-trace, code, stack-rewind = 0 }
     util := require 'util' unless util
 
-    print-stack-trace ?= our.opts.print-stack-trace
-    stack = (new Error).stack
-
-    # --- some environments (e.g. phantomjs) don't give us a stack.
-    stack = '' unless stack?
-
-    # --- take off 'Error'.
-    stack := stack.replace // ^ \s* \S+ \s+ // '   '
-
-    [funcname, filename, line-num] = do ->
-        # --- this will all break one day, but here we go:
-
-        # kill two frames to get back to the useful call, and then n more (n
-        # = stack-rewind).
-        #
-        # careful: extended regex not allowed in interpolation.
-        regex = ".*\n" * (2 + stack-rewind)
-        my-stack = stack.replace // ^ #regex // ''
-
-        if m = my-stack.match // ^ \s+ at \s+ (\S+) \s* \( (.+?) : (\d+) : \d+ \) //
-            # --- function, file, line
-            [m[1], m[2], m[3]]
-        else if m = my-stack.match // ^ \s+ at \s+ (.+?) : (\d+) : \d+ //
-            [void, m[1], m[2]]
-        else
-            ["«unknown-file»", "«unknown-line»"]
+    print-stack-trace-opt = print-stack-trace
 
     # --- will call pcomplain() again, but won't infinitely loop.
     return iwarn 'bad param msg' unless is-arr msg
@@ -215,27 +194,48 @@ function pcomplain { msg, type, error, print-stack-trace, code, stack-rewind = 0
 
     print-file-and-line = false
 
-    if type is 'api'
+    if type is 'aerror'
+        msg.push "bad call." unless msg.length
         msg.unshift "Api error:"
         error = true
         print-file-and-line = true
-    else if type is 'internal'
-        if error
-            msg.unshift "Internal error:"
-        else
-            msg.unshift "Internal warning:"
+        print-stack-trace = true
+        allow = our.opts.api-error is 'allow'
+    else if type is 'ierror'
+        msg.push "something's wrong." unless msg.length
+        msg.unshift "Internal error:"
         print-file-and-line = true
-    else
-        if error
-            msg.unshift "Error:"
-        else
-            msg.unshift "Warning:"
+        print-stack-trace = true
+        allow = our.opts.error is 'allow'
+    else if type is 'iwarn'
+        msg.push "something's wrong." unless msg.length
+        msg.unshift "Internal warning:"
+        print-file-and-line = true
+        print-stack-trace = true
+        allow = true
+    else if type is 'error'
+        msg.push "something's wrong." unless msg.length
+        msg.unshift "Error:"
         print-file-and-line = false
+        print-stack-trace = false
+        allow = our.opts.error is 'allow'
+    else if type is 'warn'
+        msg.push "something's wrong." unless msg.length
+        msg.unshift "Warning:"
+        print-file-and-line = false
+        print-stack-trace = false
+        allow = true
 
-    if error
-        bullet-color = red
-    else
+    print-stack-trace = that if print-stack-trace-opt?
+    print-stack-trace = that if our.opts.print-stack-trace?
+
+    if allow
         bullet-color = bright-red
+    else
+        bullet-color = red
+
+    if print-stack-trace or print-file-and-line
+        [stack, funcname, filename, line-num] = get-stack stack-rewind
 
     msg.0 = do ->
         ind = ' ' * bullet-get 'indent'
@@ -270,10 +270,40 @@ function pcomplain { msg, type, error, print-stack-trace, code, stack-rewind = 0
     msg.push "\n"
     process.stderr.write join ' ' msg
 
-    if error
+    if not allow
         code ?= 1
         process.exit code
 
     void
 
+# --- @private.
+function get-stack stack-rewind
+    stack = (new Error).stack
+
+    # --- some environments (e.g. phantomjs) don't give us a stack.
+    stack = '' unless stack?
+
+    # --- take off 'Error'.
+    stack := stack.replace // ^ \s* \S+ \s+ // '   '
+
+    [funcname, filename, line-num] = do ->
+        # --- this will all break one day, but here we go:
+        #
+        # kill three frames to get back to the useful call, and then n more (n
+        # = stack-rewind).
+        #
+        # careful: extended regex not allowed in interpolation.
+
+        regex = ".*\n" * (3 + stack-rewind)
+        my-stack = stack.replace // ^ #regex // ''
+
+        if m = my-stack.match // ^ \s+ at \s+ (\S+) \s* \( (.+?) : (\d+) : \d+ \) //
+            # --- function, file, line
+            [m.1, m.2, m.3]
+        else if m = my-stack.match // ^ \s+ at \s+ (.+?) : (\d+) : \d+ //
+            [void, m.1, m.2]
+        else
+            ["«unknown-file»" "«unknown-line»"]
+
+    [stack, funcname, filename, line-num]
 
