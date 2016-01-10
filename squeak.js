@@ -50,7 +50,7 @@ function complain(){
   func = our.opts.fatal ? error : warn;
   opts.stackRewind == null && (opts.stackRewind = 0);
   opts.stackRewind += 2;
-  return func(msg, opts);
+  return func.apply(null, msg.concat([opts]));
 }
 function iwarn(){
   var msg, opts;

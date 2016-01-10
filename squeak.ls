@@ -70,7 +70,7 @@ function complain ...msg
     func = if our.opts.fatal then error else warn
     opts.stack-rewind ?= 0
     opts.stack-rewind += 2
-    func msg, opts
+    func.apply null msg ++ [opts]
 
 # --- programmer warnings.
 #

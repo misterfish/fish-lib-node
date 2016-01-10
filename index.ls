@@ -16,6 +16,8 @@ sprintf = require 'sprintf'
 
 { shuffle-array, merge-objects, ord, chr, range, times, array, to-array, } = util = require './util'
 
+{ getopt, } = opt = require './opt'
+
 config =
     # --- functions which our sister modules in this package might need from
     # us but which we don't want to export to the world.
@@ -66,7 +68,7 @@ Identifier.all = {}
 Identifier.main = {
     import-all, import-kind,
 
-    #getopt, 
+    getopt,
     sprintf,
 }
 

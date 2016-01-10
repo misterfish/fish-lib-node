@@ -1,4 +1,4 @@
-var ref$, curry, join, last, map, each, compact, keys, values, sprintf, sysMod, sysSet, sysOk, sysExec, sysSpawn, sys, shellQuote, speak, bullet, bulletSet, bulletGet, log, info, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, squeak, errSet, icomplain, complain, iwarn, ierror, warn, error, aerror, types, ofNumber, ofObject, okNumber, isArray, isObject, isString, isBoolean, isFunction, isInteger, isIntegerStrict, isNumber, isNumberStrict, isIntegerPositive, isIntegerNonNegative, isBuffer, ofNum, ofObj, okNum, isArr, isObj, isStr, isBool, isFunc, isInt, isIntStrict, isNum, isNumStrict, isIntPos, isIntNonNeg, isBuf, util, shuffleArray, mergeObjects, ord, chr, range, times, array, toArray, config, Identifier, k, v, slice$ = [].slice;
+var ref$, curry, join, last, map, each, compact, keys, values, sprintf, sysMod, sysSet, sysOk, sysExec, sysSpawn, sys, shellQuote, speak, bullet, bulletSet, bulletGet, log, info, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, squeak, errSet, icomplain, complain, iwarn, ierror, warn, error, aerror, types, ofNumber, ofObject, okNumber, isArray, isObject, isString, isBoolean, isFunction, isInteger, isIntegerStrict, isNumber, isNumberStrict, isIntegerPositive, isIntegerNonNegative, isBuffer, ofNum, ofObj, okNum, isArr, isObj, isStr, isBool, isFunc, isInt, isIntStrict, isNum, isNumStrict, isIntPos, isIntNonNeg, isBuf, util, shuffleArray, mergeObjects, ord, chr, range, times, array, toArray, opt, getopt, config, Identifier, k, v, slice$ = [].slice;
 ref$ = require("prelude-ls"), curry = ref$.curry, join = ref$.join, last = ref$.last, map = ref$.map, each = ref$.each, compact = ref$.compact, keys = ref$.keys, values = ref$.values;
 sprintf = require('sprintf');
 ref$ = sysMod = require('./sys'), sysSet = ref$.sysSet, sysOk = ref$.sysOk, sysExec = ref$.sysExec, sysSpawn = ref$.sysSpawn, sys = ref$.sys, shellQuote = ref$.shellQuote;
@@ -6,6 +6,7 @@ ref$ = speak = require('./speak'), bullet = ref$.bullet, bulletSet = ref$.bullet
 ref$ = squeak = require('./squeak'), errSet = ref$.errSet, icomplain = ref$.icomplain, complain = ref$.complain, iwarn = ref$.iwarn, ierror = ref$.ierror, warn = ref$.warn, error = ref$.error, aerror = ref$.aerror;
 ref$ = types = require('./types'), ofNumber = ref$.ofNumber, ofObject = ref$.ofObject, okNumber = ref$.okNumber, isArray = ref$.isArray, isObject = ref$.isObject, isString = ref$.isString, isBoolean = ref$.isBoolean, isFunction = ref$.isFunction, isInteger = ref$.isInteger, isIntegerStrict = ref$.isIntegerStrict, isNumber = ref$.isNumber, isNumberStrict = ref$.isNumberStrict, isIntegerPositive = ref$.isIntegerPositive, isIntegerNonNegative = ref$.isIntegerNonNegative, isBuffer = ref$.isBuffer, ofNum = ref$.ofNum, ofObj = ref$.ofObj, okNum = ref$.okNum, isArr = ref$.isArr, isObj = ref$.isObj, isStr = ref$.isStr, isBool = ref$.isBool, isFunc = ref$.isFunc, isInt = ref$.isInt, isIntStrict = ref$.isIntStrict, isNum = ref$.isNum, isNumStrict = ref$.isNumStrict, isIntPos = ref$.isIntPos, isIntNonNeg = ref$.isIntNonNeg, isBuf = ref$.isBuf;
 ref$ = util = require('./util'), shuffleArray = ref$.shuffleArray, mergeObjects = ref$.mergeObjects, ord = ref$.ord, chr = ref$.chr, range = ref$.range, times = ref$.times, array = ref$.array, toArray = ref$.toArray;
+getopt = (opt = require('./opt')).getopt;
 config = {
   pkg: {
     confSet: confSet
@@ -74,6 +75,7 @@ Identifier.all = {};
 Identifier.main = {
   importAll: importAll,
   importKind: importKind,
+  getopt: getopt,
   sprintf: sprintf
 };
 Identifier.speak = {

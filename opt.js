@@ -1,28 +1,12 @@
-/* usage:
-
- --n, -n, --na, --nam, -nam, all alias to name by default (if it's not a
- cluster of other opts).
- But in this case -n and -a cluster. so -na is -n -a while -nam is --name.
-
- opt = getopt do
-   s: 'b'
-   t: 'b'
-   path: 'p'
-   name: 's'
-   alpha: 'ms' # will become an array
-   n: 'b'
-   a:
-     'b'
-     some-option: 'val' # although no options are currently supported (nopt doesn't seem very configurable)
-
- { name, math, alpha, path } = opt
- name or error 'Missing name'
-
-*/
+var path, nopt, out$ = typeof exports != 'undefined' && exports || this;
+out$.getopt = getopt;
+path = void 8;
+nopt = require('nopt');
 function getopt(args){
-  var nopt, path, knownOpts, shortHands, types, arrangedKeys, i$, len$, opt, v, type, opts, parsed, k;
-  nopt = require('nopt');
-  path == null && (path = require('path'));
+  var knownOpts, shortHands, types, arrangedKeys, i$, len$, opt, v, type, opts, parsed, k;
+  if (!path) {
+    path = require('path');
+  }
   knownOpts = {};
   shortHands = {};
   types = {
