@@ -13,7 +13,6 @@
   },
   "license": "GPL-2.0",
   "dependencies": {
-    "glob-fs": "^0.1.6",
     "nopt": "^3.0.3",
     "prelude-ls": "^1.1.2",
     "sprintf": "^0.1.5"
