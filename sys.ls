@@ -126,9 +126,9 @@
 #
 # if out-ignore or err-ignore is true: 
 #
-#   exec-sync, spawn-sync: those streams are not listened on.
-#   exec-async: these flags don't do anything.
-#   spawn-async: those streams are not listened on, though the caller is
+#   exec sync, spawn sync: those streams are not listened on.
+#   exec async: these flags don't do anything.
+#   spawn async: those streams are not listened on, though the caller is
 #   free to.
 #
 # otherwise:
@@ -156,7 +156,17 @@
 # are passed to the oncomplete function in all cases, too; it is not
 # possible to prevent this.
 #
-# --- sync XX
+# --- sync vs. async
+#
+# the async versions generally allow much more control.
+#
+# in the sync case of both exec and spawn they return an object on success:
+#   { ok, code, out (alias to stdout), stdout, stderr }
+#
+# first they pass this object to oncomplete, if it exists.
+#
+# on error they behave basically the same as the async cases, and will pass
+# node's error object (as a string) where possible.
 #
 # ------ tip, exec:
 #
@@ -285,9 +295,6 @@ function shell-quote arg
 #
 # all args but 'ok-callback' and 'notok-callback' are simply passed through
 # to sys. 
-#
-# XXX
-# all forms of sys are supported except the ones with an {opts} arg.
 # 
 # out and err are ignored and that can't be changed by the caller -- the
 # rationale is to keep this function simple and have them use sys-exec or
