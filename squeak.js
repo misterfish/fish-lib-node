@@ -126,7 +126,7 @@ function errSet(opts){
   });
 }
 function pcomplain(arg$){
-  var msg, type, internal, printStackTrace, code, stackRewind, ref$, printStackTraceOpt, printFileAndLine, error, allow, that, bulletColor, stack, funcname, filename, lineNum;
+  var msg, type, internal, printStackTrace, code, stackRewind, ref$, printStackTraceOpt, printFileAndLine, error, allow, throws, that, bulletColor, stack, funcname, filename, lineNum, msgStr;
   msg = arg$.msg, type = arg$.type, internal = arg$.internal, printStackTrace = arg$.printStackTrace, code = arg$.code, stackRewind = (ref$ = arg$.stackRewind) != null ? ref$ : 0;
   if (!util) {
     util = require('util');
@@ -152,6 +152,7 @@ function pcomplain(arg$){
     printFileAndLine = true;
     printStackTrace = true;
     allow = our.opts.apiError === 'allow';
+    throws = our.opts.apiError === 'throw';
   } else if (type === 'ierror') {
     if (!msg.length) {
       msg.push("something's wrong.");
@@ -160,6 +161,7 @@ function pcomplain(arg$){
     printFileAndLine = true;
     printStackTrace = true;
     allow = our.opts.error === 'allow';
+    throws = our.opts.error === 'throw';
   } else if (type === 'iwarn') {
     if (!msg.length) {
       msg.push("something's wrong.");
@@ -168,6 +170,7 @@ function pcomplain(arg$){
     printFileAndLine = true;
     printStackTrace = true;
     allow = true;
+    throws = false;
   } else if (type === 'error') {
     if (!msg.length) {
       msg.push("something's wrong.");
@@ -176,6 +179,7 @@ function pcomplain(arg$){
     printFileAndLine = false;
     printStackTrace = false;
     allow = our.opts.error === 'allow';
+    throws = our.opts.error === 'throw';
   } else if (type === 'warn') {
     if (!msg.length) {
       msg.push("something's wrong.");
@@ -184,12 +188,22 @@ function pcomplain(arg$){
     printFileAndLine = false;
     printStackTrace = false;
     allow = true;
+    throws = false;
   }
   if ((that = printStackTraceOpt) != null) {
     printStackTrace = that;
   }
   if ((that = our.opts.printStackTrace) != null) {
     printStackTrace = that;
+  }
+  if (throws) {
+    yellow = green = brightRed = red = function(it){
+      if (isArr(it)) {
+        return it[0];
+      } else {
+        return it;
+      }
+    };
   }
   if (allow) {
     bulletColor = brightRed;
@@ -240,6 +254,10 @@ function pcomplain(arg$){
     }
   }
   msg.push("\n");
+  msgStr = join(' ', msg);
+  if (throws) {
+    throw new Error(msgStr);
+  }
   process.stderr.write(join(' ', msg));
   if (!allow) {
     code == null && (code = 1);

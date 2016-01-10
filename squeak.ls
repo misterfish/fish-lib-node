@@ -49,14 +49,14 @@ our =
 
         # --- 'fatal' | 'throw' | 'allow'
         #
-        # you can set this to 'allow' to make the error() function not exit,
-        # but you probably don't want to -- error() is meant to be used to
-        # mean serious errors.
+        # you can set this to 'allow' to make the (i)error() function not
+        # exit, but you probably don't want to -- (i)error() is meant to be
+        # used to mean serious errors.
         #
-        # in fish-lib error() is never preceded by return -- if for some
+        # in fish-lib (i)error() is never preceded by return -- if for some
         # reason you do set this to 'allow' you probably want to do it for
-        # short bursts of code and make sure to call 'return error()'
-        # instead of just 'error()'
+        # short bursts of code and make sure to call 'return (i)error()'
+        # instead of just '(i)error()'
         #
         # if it's set to 'throw' it will throw an exception with the given
         # message.
@@ -201,33 +201,42 @@ function pcomplain { msg, type, internal, print-stack-trace, code, stack-rewind 
         print-file-and-line = true
         print-stack-trace = true
         allow = our.opts.api-error is 'allow'
+        throws = our.opts.api-error is 'throw'
     else if type is 'ierror'
         msg.push "something's wrong." unless msg.length
         msg.unshift "Internal error:"
         print-file-and-line = true
         print-stack-trace = true
         allow = our.opts.error is 'allow'
+        throws = our.opts.error is 'throw'
     else if type is 'iwarn'
         msg.push "something's wrong." unless msg.length
         msg.unshift "Internal warning:"
         print-file-and-line = true
         print-stack-trace = true
         allow = true
+        throws = false
     else if type is 'error'
         msg.push "something's wrong." unless msg.length
         msg.unshift "Error:"
         print-file-and-line = false
         print-stack-trace = false
         allow = our.opts.error is 'allow'
+        throws = our.opts.error is 'throw'
     else if type is 'warn'
         msg.push "something's wrong." unless msg.length
         msg.unshift "Warning:"
         print-file-and-line = false
         print-stack-trace = false
         allow = true
+        throws = false
 
     print-stack-trace = that if print-stack-trace-opt?
     print-stack-trace = that if our.opts.print-stack-trace?
+
+    # --- disable colors.
+    if throws then yellow := green := bright-red := red := ->
+        if is-arr it then it.0 else it
 
     if allow
         bullet-color = bright-red
@@ -268,6 +277,11 @@ function pcomplain { msg, type, internal, print-stack-trace, code, stack-rewind 
             msg.push stack
 
     msg.push "\n"
+    msg-str = join ' ' msg
+
+    if throws
+        throw new Error msg-str
+
     process.stderr.write join ' ' msg
 
     if not allow
