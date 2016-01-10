@@ -1,6 +1,4 @@
 # STDIN XX
-# call it stdout & stderr to allow for one day passing an err object. XX
-#
 #
 # --- sys-exec and sys-spawn have mostly the same usage:
 #
@@ -137,7 +135,7 @@
 #
 #   if out-print/err-print is true:
 #
-#       print the data to its stream.
+#       print the data to its stream and do not send it to the callback.
 #
 #   if out-print/err-print is false (with the exception of stderr in the
 #   synchronous exec case, see above):
@@ -149,14 +147,10 @@
 #       the argument to oncomplete, so oncomplete is of course optional in
 #       these cases.
 #
-#       # XX take out
-#       if oncomplete is nothing then out-print/err-print are set to true.
-#
-#
 # ------ stream handling, exec:
 #
-# if out-print/err-print is true, print the data on its stream, otherwise
-# don't.
+# if out-print/err-print is true, print the data on its stream and do not
+# send it to the callback.
 #
 # stdout and stderr are harvested by the underlying exec in all cases, and
 # are passed to the oncomplete function in all cases, too; it is not
@@ -181,15 +175,16 @@ export
 
 child-process = require 'child_process'
 
-{ last, values, join, } = require "prelude-ls"
+{ last, keys, join, map, each, compact, } = require "prelude-ls"
 
 main = require.main
 
 { } = main.exports
 
-{ is-buffer, is-func, is-obj, is-arr, is-str, } = types = require './types'
-{ aerror, iwarn, warn, error, } = squeak = require './squeak'
-{ log, bullet, } = speak = require './speak'
+{ is-buffer, is-string, is-func, is-obj, is-arr, is-str, } = require './types'
+{ aerror, iwarn, warn, error, } = require './squeak'
+{ log, bullet, } = require './speak'
+{ array, } = require './util'
 
 our =
     # --- functions which we need from main but which main doesn't want to
@@ -221,9 +216,13 @@ our =
         # non-zero exit status even if they ran mostly ok.
         quiet-on-exit: false
 
+        # --- hide ugly error messages from node (e.g. spawn ENOENT) (spawn
+        # only).
+        quiet-node-syserr: false
+
         # --- suppress all warnings.
         #
-        # implies 'quiet-on-exit'.
+        # implies 'quiet-on-exit' and 'quiet-node-syserr'.
         #
         # will be ignored if mixed with 'die'.
         quiet: false
@@ -237,19 +236,18 @@ our =
         err-split: false
         out-split: false
 
+        # --- remove the trailing empty element when splitting on \n, for
+        # example, and the string ended on \n (spawn only).
+        #
+        # leave it as-is when not splitting.
+        #
+        # (this is how perl does it by default).
+        out-split-remove-trailing-element: true
+        err-split-remove-trailing-element: true
+
         # --- (spawn only): don't listen on these streams
         out-ignore: false
         err-ignore: false
-
-        # --- XXX
-        slurp: true
-
-        # --- XXX
-        # hide ugly error messages from node (e.g. spawn ENOENT).
-        ignore-node-syserr: false
-
-        # --- whether to keep the trailing newline at the end of the streams.
-        keep-trailing-newline: false
 
         # --- opts which are passed directly to the underlying .exec() /
         # .spawn() call.
@@ -351,6 +349,9 @@ function sysdo-exec opts
         oncomplete,
         args = [],
 
+        out-ignore = our.opts.out-ignore,
+        err-ignore = our.opts.err-ignore,
+
         die = our.opts.die,
         verbose = our.opts.verbose,
         quiet = our.opts.quiet,
@@ -383,6 +384,9 @@ function sysdo-exec-sync opts
         oncomplete,
         args = [],
 
+        out-ignore = our.opts.out-ignore,
+        err-ignore = our.opts.err-ignore,
+
         die = our.opts.die,
         verbose = our.opts.verbose,
         quiet = our.opts.quiet,
@@ -390,8 +394,6 @@ function sysdo-exec-sync opts
         sync = our.opts.sync,
         out-print = our.opts.out-print,
         err-print = our.opts.err-print,
-        out-ignore = our.opts.out-ignore,
-        err-ignore = our.opts.err-ignore,
         out-split = our.opts.out-split,
         err-split = our.opts.err-split,
 
@@ -523,88 +525,67 @@ function sysdo-exec-async opts
 
 # | sysdo-exec-async
 
-/**
-  * @private
-  */
+# --- actually do the spawn.
+#
+# @private
 
-function sysdo-spawn {
-    cmd,
-    oncomplete,
-    args = [],
+function sysdo-spawn opts
+    {
+        cmd,
+        oncomplete,
+        args = [],
 
-    out-ignore = our.opts.out-ignore,
-    err-ignore = our.opts.err-ignore,
+        out-ignore = our.opts.out-ignore,
+        err-ignore = our.opts.err-ignore,
 
-    die = our.opts.die,
-    verbose = our.opts.verbose,
-    quiet = our.opts.quiet,
-    quiet-on-exit = our.opts.quiet-on-exit,
-    sync = our.opts.sync,
-    out-print = our.opts.out-print,
-    err-print = our.opts.err-print,
-    out-split = our.opts.out-split,
-    err-split = our.opts.err-split,
-    slurp = our.opts.slurp,
+        die = our.opts.die,
+        verbose = our.opts.verbose,
+        quiet = our.opts.quiet,
+        quiet-on-exit = our.opts.quiet-on-exit,
+        sync = our.opts.sync,
+        out-print = our.opts.out-print,
+        err-print = our.opts.err-print,
+        out-split = our.opts.out-split,
+        err-split = our.opts.err-split,
 
-    ignore-node-syserr = our.opts.ignore-node-syserr,
-    keep-trailing-newline = our.opts.keep-trailing-newline,
+        quiet-node-syserr = our.opts.quiet-node-syserr,
 
-    invocation-opts,
-} # /sysdo args
+        out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element
+        err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element
 
-    global.glob-fs = require 'glob-fs' unless global.glob-fs?
+        invocation-opts,
+    } = opts
 
     syserror-fired = false
 
-    quiet-on-exit = true if quiet
+    if quiet
+        quiet-on-exit = true
+        quiet-node-syserr = true
 
-    stream-data = {}
-    # max length param XX
-    if out-split then stream-data.out = [] else stream-data.out = ''
-    if err-split then stream-data.err = [] else stream-data.err = ''
+    stream-data =
+        # --- [] | ''
+        #
+        # here we store the data which appears on the streams we are
+        # listening on.
+        out: if out-split then [] else ''
+        err: if err-split then [] else ''
 
-    if sync
-        iwarn "sys sync not implemented"
-        return
+    if out-split == true then out-split = '\n'
+    if err-split == true then err-split = '\n'
 
     if oncomplete?
         return aerror() unless is-func that
 
-    [cmd-bin, cmd-args] = do ->
-        ...
-        #parse = shell-parse cmd # split into shell words
-
-        # note that we don't expand globs in the first token.
-        parsed-bin = parse.shift()
-        parsed-args = []
-        parse |> each ->
-            if is-obj it
-                # ls 'a*' -> { op: 'glob', glob: 'a*' }
-                if it.op is 'glob'
-                    if it.pattern?
-                        # can emit ugly error XX
-                        glob-fs().readdirSync that |> each (-> parsed-args.push it)
-                    else
-                        return iwarn "Can't deal with parsed arg:" it
-                else
-                    if it.op?
-                        parsed-args.push that
-                    else
-                        return iwarn "Can't deal with parsed arg:" it
-            else
-                parsed-args.push it
-        [parsed-bin, parsed-args ++ args]
-
     if verbose then do ->
         print-cmd = join ' ', [cmd] ++ map (shell-quote), args
-        ind = ' ' * Bullet.indent
-        spa = ' ' * Bullet.spacing
+        ind = ' ' * bullet-get 'indent'
+        spa = ' ' * bullet-get 'spacing'
         bul = green bullet()
-        log "#ind#bul#spa#print-cmd"
+        log join '' array ind, bul, spa, print-cmd
 
-    spawned = child-process.spawn cmd-bin, cmd-args, invocation-opts
+    spawned = child-process.spawn cmd, args, invocation-opts
 
-    stream-config =
+    stream-configs =
         out:
             ignore: out-ignore
             spawn-stream: spawned.stdout
@@ -612,6 +593,8 @@ function sysdo-spawn {
             list: out-split
             which: 'out'
             proc-stream: process.stdout
+            split-string: out-split
+            split-remove-trailing-element: out-split-remove-trailing-element
         err:
             ignore: err-ignore
             spawn-stream: spawned.stderr
@@ -619,136 +602,125 @@ function sysdo-spawn {
             list: err-split
             which: 'err'
             proc-stream: process.stderr
+            split-string: err-split
+            split-remove-trailing-element: err-split-remove-trailing-element
 
-    handle-data-as-list = (strc, str) ->
-        stream = stream-data[strc.which] # i.e. out or err
-        split = str / '\n'
-        # concatenate to last one if last buffer didn't
-        # end in a newline.
-        if stream.length > 0
-            last = stream[stream.length - 1]
-            first = split[0]
-            first-cur-is-newline = first == ''
-            last-prev-was-partial = last != ''
-            # * a\n|\nb     -> ['a', '', 'b']
-            if last-prev-was-partial
-                # * rse|\ncat   -> ['rse', 'cat']
-                if first-cur-is-newline
-                    # eat it
-                    split.shift()
-                # * hor|se   -> ['horse']
-                else
-                    # eat it and add it to prev
-                    stream[stream.length - 1] += split.shift()
-            # Last read ended on a newline. Get rid of the '',
-            # regardless of whether cur read begins with newline.
-            # * a\n|b       -> ['a', 'b']
-            # * a\n|\nb     -> ['a', '', 'b']
-            else
-                stream.pop()
+    # --- which = out/err
+    (keys stream-configs).for-each (which) ->
+        stream-config = stream-configs[which]
+        stream-config.spawn-stream.on 'error' (error) ->
+            warn "Got error on stream std#which" error
 
-        each (stream.push _), split
+        return if stream-config.ignore
 
-    # stream-config obj, string to handle
-    handle-data = (strc, str) ->
-        if strc.print
-            strc.proc-stream.write str
-        else
-            if strc.list
-                handle-data-as-list strc, str
-            else
-                # i.e. out += str or err += str (be careful
-                # not to store by value)
-                stream-data[strc.which] += str
-
-    # it = stream-config obj
-    values stream-config |> each ->
-        it.spawn-stream.on 'error' (error) ->
-            iwarn "Got error on stream std#which (#{error})"
-
-        return if it.ignore
-
-        # data is Buffer or string
-        it.spawn-stream.on 'data' (data) ->
+        # --- data is Buffer or string.
+        stream-config.spawn-stream.on 'data' (data) ->
             if is-string data
                 str = data
-            else if Buffer.isBuffer data
+            else if is-buffer data
                 str = data.toString()
-            else
-                return iwarn "Doesn't seem to be a Buffer or a string"
+            else return iwarn "Doesn't seem to be a Buffer or a string"
 
-            handle-data it, str
+            handle-stream-data stream-data, stream-config, str
 
-        # No more data.
-        it.spawn-stream.on 'end' ->
-            # Remove final newline.
-            # This assumes nothing can happen (like an error)
+        # --- no more data.
+        stream-config.spawn-stream.on 'end' ->
+            { split-remove-trailing-element, split-string, } = stream-config
+
+            # --- remove final element unless
+            # xxx-split-remove-trailing-element is false.
+            #
+            # note that this assumes nothing can happen (like an error)
             # between the last data event and the end event.
-            if not keep-trailing-newline
-                out = stream-data.out
-                if out-split
-                    out.pop() if last(out) == ''
-                else if out.substring(out.length - 1) == '\n'
-                        stream-data.out = out.substring 0, out.length - 1
 
-    # In the case of error event, we won't have code or signal. 
-    # E.g.: /non/existent/command abc
-    # exit signal might also fire, in which case, do nothing.
+            if split-remove-trailing-element and split-string
+                data = stream-data[which]
+                data.pop() if '' == last data
+
+    # --- error processing.
+    #
+    # in the case of an error event, we won't have code or signal. 
+    #
+    # e.g.: /nonexistent/cmd abc
+    #
+    # the 'exit' signal might also fire, in which case, do nothing.
     # 
-    # In the case of exit, we will have code and signal, and err/out
+    # in the case of exit, we will have code and signal, and err/out
     # streams have already been captured if applicable.
     #
-    # In both cases, call syserror, but make sure not to call it twice.
+    # in both cases, call syserror, but make sure not to call it twice.
 
-    this-error = (args) ->
-        syserror merge-objects args, {
+    # --- this will be called by either the 'close' event or 'error' event
+    # and route the params through to syserror().
+    do-syserror = (args) ->
+        syserror args <<< {
             cmd, oncomplete,
             die, quiet, quiet-on-exit,
             out: stream-data.out,
+            stdout: stream-data.out,
             err: stream-data.err,
         }
 
-    # Not fired if killed by a signal.
+    # --- error, e.g.: /nonexistent/cmd abc
+    #
+    # not fired if killed by a signal.
+    #
     # ondata events of stderr/stdout might not have fired yet (and
     # probably never will). 
-    # e.g., /bad/ls abc
-    spawned.on 'error' (errobj) ->
-        # This is a very nodey message (e.g. spawn ENOENT)
-        # If you're looking for something like 'bash: finderjsdf: command not found', forget it ... there is no shell spawned.
-        # Maybe provide an opt to capture this error, but let the other one
-        # flow to stderr.
 
-        errmsg = errobj.message
-        if not ignore-node-syserr
-            handle-data stream-config.err, errmsg
+    spawned.on 'error' (errobj) ->
+        # --- this is a very nodey message (e.g. spawn ENOENT).
+        #
+        # if you're looking for something like 'bash: finderjsdf: command
+        # not found', forget it ... there is no shell spawned.
+        #
+        # in the future we might provide an opt to capture this error, but
+        # let the other one flow to stderr.
+
+        if not quiet-node-syserr
+            handle-data stream-config.err, errobj.message
 
         if not syserror-fired
-            syserror-fired = true
-            # calls oncomplete.
-            return this-error {}
+            syserror-fired := true
+            # --- calls oncomplete.
+            return do-syserror {}
+    # | -> on error
 
-    # exit is when the process exits, but the streams might still be
-    # open.
-    # close is when the last stream has been closed, but it's distinct
+    # --- the 'exit' event is for when the process exits, but the streams
+    # might still be open.
+    #
+    # 'close' is when the last stream has been closed, but it's distinct
     # from exit, because multiple processes could be sharing these
     # streams.
+    #
     # we assume that they are not.
+
     spawned.on 'close', (code, signal) ->
+
+        # --- non-zero exit.
         if code is not 0
             if not syserror-fired
-                syserror-fired = true
-                # calls oncomplete.
-                return this-error { code, signal }
-        else
-            oncomplete { ok: true, signal, code, stream-data.out, stream-data.err } if oncomplete?
+                syserror-fired := true
+                # --- calls oncomplete.
+                do-syserror { code, signal }
+            return
+
+        # --- all good.
+        if oncomplete then oncomplete {
+            ok: true,
+            signal,
+            code,
+            out: stream-data.out,
+            stdout: stream-data.out,
+            err: stream-data.err
+        }
+    # | -> on close
 
     spawned
 
-# end sysdo-spawn
+# | sysdo-spawn
 
-/**
- * @private
- */
+# --- @private
 function syserror ({ cmd, code, signal, oncomplete, out, err, die, quiet, quiet-on-exit })
     str-sig = " «got signal #{ cyan signal }»" if signal
     str-cmd = " «#{ bright-red cmd }»"
@@ -815,6 +787,7 @@ function sys-process-args ...args-array
         opts.args = args
     # 6
     else if num-args == 3 and is-arr args-array.1 and is-func args-array.2
+        log '6'
         [ cmd, args, oncomplete ] = args-array
         opts = { cmd, args, oncomplete }
     # 7
@@ -877,3 +850,66 @@ function output-to-scalar-or-list output, do-split
         output .= split // #do-split //
     output
 
+function handle-stream-data stream-data, stream-config, string
+    { print, proc-stream, list, } = stream-config
+
+    # --- print to stderr/stdout and return.
+    if print
+        proc-stream.write string + '\n'
+        return
+
+    # --- store for sending to oncomplete().
+    handle = if list then handle-stream-data-as-list else handle-stream-data-as-scalar
+    handle stream-data, stream-config, string
+
+# --- append the incoming strings to the stream-data.out / stream-data.err
+# scalar.
+function handle-stream-data-as-scalar stream-data, stream-config, string
+    stream-data[stream-config.which] += string
+
+# --- split the incoming strings and push them to the stream-data.out /
+# stream-data.err array.
+#
+# (we're using \n as the example split-string in the comments).
+#
+# the tricky thing is that if the last string didn't end in \n -- meaning
+# that the last stored item is not the empty string -- then you have to
+# concatenate to the last one.
+
+function handle-stream-data-as-list stream-data, stream-config, string
+    { which, split-string } = stream-config
+
+    # --- i.e., out or err.
+    stream = stream-data[which]
+
+    split = string.split split-string
+
+    # --- check the last one.
+    if stream.length > 0
+        last = stream[stream.length - 1]
+        first = split.0
+        first-cur-is-newline = first == ''
+        last-prev-was-partial = last != ''
+
+        # * a\n|\nb     -> ['a', '', 'b']
+        if last-prev-was-partial
+            # * rse|\ncat   -> ['rse', 'cat']
+            if first-cur-is-newline
+                # eat it
+                split.shift()
+            # * hor|se   -> ['horse']
+            else
+                # --- eat it and add it to prev
+                stream[stream.length - 1] += split.shift()
+
+        # --- last read did end on \n. 
+        #
+        # get rid of the '', regardless of whether cur read begins with
+        # newline.
+        #
+        # * a\n|b       -> ['a', 'b']
+        # * a\n|\nb     -> ['a', '', 'b']
+        else
+            stream.pop()
+
+    split.for-each -> stream.push it

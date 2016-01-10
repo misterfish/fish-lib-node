@@ -9,14 +9,15 @@ export
     error
     aerror
 
-{ last, } = require "prelude-ls"
+{ last, join, map, } = require "prelude-ls"
 
 main = require.main
 
 { } = main.exports
 
-{ is-obj, } = types = require './types'
-{ green, bright-red, yellow, red, } = speak = require './speak'
+{ is-obj, is-arr, } = require './types'
+{ bullet, bullet-get, green, bright-red, yellow, red, } = require './speak'
+{ array, } = require './util'
 
 # --- lazy loaded module (required when needed).
 #
@@ -41,7 +42,7 @@ our =
         # our.opts.fatal might also get set to false by default at some point, so be
         # sure to set it if you really depend on it.
         fatal: true
-        stack-trace: false
+        print-stack-trace: false
 
 # --- checks our.opts.fatal and routes through either ierror or iwarn.
 #
@@ -80,7 +81,7 @@ function iwarn ...msg
     if is-obj opts then msg.pop() else opts = {}
 
     pcomplain opts <<<
-        msg
+        msg: msg
         type: 'internal'
         error: false
 
@@ -93,7 +94,7 @@ function ierror ...msg
     if is-obj opts then msg.pop() else opts = {}
 
     pcomplain opts <<<
-        msg
+        msg: msg
         type: 'internal'
         error: true
 
@@ -106,7 +107,7 @@ function warn ...msg
     if is-obj opts then msg.pop() else opts = {}
 
     pcomplain opts <<<
-        msg
+        msg: msg
         type: 'normal'
         error: false
 
@@ -119,7 +120,7 @@ function error ...msg
     if is-obj opts then msg.pop() else opts = {}
 
     pcomplain opts <<<
-        msg
+        msg: msg
         type: 'normal'
         error: true
 
@@ -132,7 +133,7 @@ function aerror ...msg
     if is-obj opts then msg.pop() else opts = {}
 
     pcomplain opts <<<
-        msg
+        msg: msg
         type: 'api'
 
 function init { pkg = {}, } = {}
@@ -175,10 +176,10 @@ function complain1 ...msg
  *
  * msg: array.
  */
-function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
+function pcomplain { msg, type, error, print-stack-trace, code, stack-rewind = 0 }
     util := require 'util' unless util
 
-    stack-trace ?= our.opts.stack-trace
+    print-stack-trace ?= our.opts.print-stack-trace
     stack = (new Error).stack
 
     # --- some environments (e.g. phantomjs) don't give us a stack.
@@ -206,25 +207,30 @@ function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
             ["«unknown-file»", "«unknown-line»"]
 
     # --- will call pcomplain() again, but won't infinitely loop.
-    return iwarn 'bad param msg' unless is-array msg
+    return iwarn 'bad param msg' unless is-arr msg
 
     msg = map do
         -> if is-obj it then util.inspect it else it
         msg
 
+    print-file-and-line = false
+
     if type is 'api'
         msg.unshift "Api error:"
         error = true
+        print-file-and-line = true
     else if type is 'internal'
         if error
             msg.unshift "Internal error:"
         else
             msg.unshift "Internal warning:"
+        print-file-and-line = true
     else
         if error
             msg.unshift "Error:"
         else
             msg.unshift "Warning:"
+        print-file-and-line = false
 
     if error
         bullet-color = red
@@ -241,7 +247,7 @@ function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
         ind + bul + spa + msg.0
 
     # --- (file:line)
-    if internal
+    if print-file-and-line
         msg.push do
             "(" +
             "#{yellow [filename, {-warn-on-error}]}" +
@@ -254,7 +260,7 @@ function pcomplain { msg, internal, error, stack-trace, code, stack-rewind = 0 }
             "#{bright-red [line-num, {-warn-on-error}]}" +
             ")"
 
-    if stack-trace
+    if print-stack-trace
         msg.push "\n"
         if m?
             msg.push m[2]

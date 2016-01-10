@@ -20,6 +20,7 @@ export
     bright-magenta
 
 { curry, values, join, } = require "prelude-ls"
+{ array, } = require './util'
 
 config =
     bullets:

@@ -1,4 +1,4 @@
-var last, main, types, isObj, speak, ref$, green, brightRed, yellow, red, util, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
+var ref$, last, join, map, main, isObj, isArr, bullet, bulletGet, green, brightRed, yellow, red, array, util, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
 out$.init = init;
 out$.errSet = errSet;
 out$.icomplain = icomplain;
@@ -8,11 +8,12 @@ out$.ierror = ierror;
 out$.warn = warn;
 out$.error = error;
 out$.aerror = aerror;
-last = require("prelude-ls").last;
+ref$ = require("prelude-ls"), last = ref$.last, join = ref$.join, map = ref$.map;
 main = require.main;
 main.exports;
-isObj = (types = require('./types')).isObj;
-ref$ = speak = require('./speak'), green = ref$.green, brightRed = ref$.brightRed, yellow = ref$.yellow, red = ref$.red;
+ref$ = require('./types'), isObj = ref$.isObj, isArr = ref$.isArr;
+ref$ = require('./speak'), bullet = ref$.bullet, bulletGet = ref$.bulletGet, green = ref$.green, brightRed = ref$.brightRed, yellow = ref$.yellow, red = ref$.red;
+array = require('./util').array;
 util = void 8;
 our = {
   pkg: {
@@ -20,7 +21,7 @@ our = {
   },
   opts: {
     fatal: true,
-    stackTrace: false
+    printStackTrace: false
   }
 };
 function icomplain(){
@@ -60,10 +61,7 @@ function iwarn(){
   } else {
     opts = {};
   }
-  return pcomplain((opts[0] = msg, opts[1] = {
-    type: 'internal',
-    error: false
-  }, opts));
+  return pcomplain((opts.msg = msg, opts.type = 'internal', opts.error = false, opts));
 }
 function ierror(){
   var msg, opts;
@@ -74,10 +72,7 @@ function ierror(){
   } else {
     opts = {};
   }
-  return pcomplain((opts[0] = msg, opts[1] = {
-    type: 'internal',
-    error: true
-  }, opts));
+  return pcomplain((opts.msg = msg, opts.type = 'internal', opts.error = true, opts));
 }
 function warn(){
   var msg, opts;
@@ -88,10 +83,7 @@ function warn(){
   } else {
     opts = {};
   }
-  return pcomplain((opts[0] = msg, opts[1] = {
-    type: 'normal',
-    error: false
-  }, opts));
+  return pcomplain((opts.msg = msg, opts.type = 'normal', opts.error = false, opts));
 }
 function error(){
   var msg, opts;
@@ -102,10 +94,7 @@ function error(){
   } else {
     opts = {};
   }
-  return pcomplain((opts[0] = msg, opts[1] = {
-    type: 'normal',
-    error: true
-  }, opts));
+  return pcomplain((opts.msg = msg, opts.type = 'normal', opts.error = true, opts));
 }
 function aerror(){
   var msg, opts;
@@ -116,9 +105,7 @@ function aerror(){
   } else {
     opts = {};
   }
-  return pcomplain((opts[0] = msg, opts[1] = {
-    type: 'api'
-  }, opts));
+  return pcomplain((opts.msg = msg, opts.type = 'api', opts));
 }
 function init(arg$){
   var pkg, ref$;
@@ -145,12 +132,12 @@ function errSet(opts){
  * msg: array.
  */
 function pcomplain(arg$){
-  var msg, internal, error, stackTrace, code, stackRewind, ref$, stack, funcname, filename, lineNum, bulletColor;
-  msg = arg$.msg, internal = arg$.internal, error = arg$.error, stackTrace = arg$.stackTrace, code = arg$.code, stackRewind = (ref$ = arg$.stackRewind) != null ? ref$ : 0;
+  var msg, type, error, printStackTrace, code, stackRewind, ref$, stack, funcname, filename, lineNum, printFileAndLine, bulletColor;
+  msg = arg$.msg, type = arg$.type, error = arg$.error, printStackTrace = arg$.printStackTrace, code = arg$.code, stackRewind = (ref$ = arg$.stackRewind) != null ? ref$ : 0;
   if (!util) {
     util = require('util');
   }
-  stackTrace == null && (stackTrace = our.opts.stackTrace);
+  printStackTrace == null && (printStackTrace = our.opts.printStackTrace);
   stack = (new Error).stack;
   if (stack == null) {
     stack = '';
@@ -168,7 +155,7 @@ function pcomplain(arg$){
       return ["«unknown-file»", "«unknown-line»"];
     }
   }(), funcname = ref$[0], filename = ref$[1], lineNum = ref$[2];
-  if (!isArray(msg)) {
+  if (!isArr(msg)) {
     return iwarn('bad param msg');
   }
   msg = map(function(it){
@@ -178,21 +165,25 @@ function pcomplain(arg$){
       return it;
     }
   }, msg);
+  printFileAndLine = false;
   if (type === 'api') {
     msg.unshift("Api error:");
     error = true;
+    printFileAndLine = true;
   } else if (type === 'internal') {
     if (error) {
       msg.unshift("Internal error:");
     } else {
       msg.unshift("Internal warning:");
     }
+    printFileAndLine = true;
   } else {
     if (error) {
       msg.unshift("Error:");
     } else {
       msg.unshift("Warning:");
     }
+    printFileAndLine = false;
   }
   if (error) {
     bulletColor = red;
@@ -210,7 +201,7 @@ function pcomplain(arg$){
     ]);
     return ind + bul + spa + msg[0];
   }();
-  if (internal) {
+  if (printFileAndLine) {
     msg.push("(" + (yellow([
       filename, {
         warnOnError: false
@@ -231,7 +222,7 @@ function pcomplain(arg$){
       }
     ]) + "") + ")");
   }
-  if (stackTrace) {
+  if (printStackTrace) {
     msg.push("\n");
     if (typeof m != 'undefined' && m !== null) {
       msg.push(m[2]);

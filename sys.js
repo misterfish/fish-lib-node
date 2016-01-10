@@ -1,4 +1,4 @@
-var childProcess, ref$, last, values, join, main, types, isBuffer, isFunc, isObj, isArr, isStr, squeak, aerror, iwarn, warn, error, speak, log, bullet, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice, split$ = ''.split;
+var childProcess, ref$, last, keys, join, map, each, compact, main, isBuffer, isString, isFunc, isObj, isArr, isStr, aerror, iwarn, warn, error, log, bullet, array, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
 out$.init = init;
 out$.sysSet = sysSet;
 out$.sysOk = sysOk;
@@ -7,12 +7,13 @@ out$.sysSpawn = sysSpawn;
 out$.sys = sys;
 out$.shellQuote = shellQuote;
 childProcess = require('child_process');
-ref$ = require("prelude-ls"), last = ref$.last, values = ref$.values, join = ref$.join;
+ref$ = require("prelude-ls"), last = ref$.last, keys = ref$.keys, join = ref$.join, map = ref$.map, each = ref$.each, compact = ref$.compact;
 main = require.main;
 main.exports;
-ref$ = types = require('./types'), isBuffer = ref$.isBuffer, isFunc = ref$.isFunc, isObj = ref$.isObj, isArr = ref$.isArr, isStr = ref$.isStr;
-ref$ = squeak = require('./squeak'), aerror = ref$.aerror, iwarn = ref$.iwarn, warn = ref$.warn, error = ref$.error;
-ref$ = speak = require('./speak'), log = ref$.log, bullet = ref$.bullet;
+ref$ = require('./types'), isBuffer = ref$.isBuffer, isString = ref$.isString, isFunc = ref$.isFunc, isObj = ref$.isObj, isArr = ref$.isArr, isStr = ref$.isStr;
+ref$ = require('./squeak'), aerror = ref$.aerror, iwarn = ref$.iwarn, warn = ref$.warn, error = ref$.error;
+ref$ = require('./speak'), log = ref$.log, bullet = ref$.bullet;
+array = require('./util').array;
 our = {
   pkg: {
     confSet: void 8
@@ -22,17 +23,17 @@ our = {
     die: false,
     verbose: true,
     quietOnExit: false,
+    quietNodeSyserr: false,
     quiet: false,
     sync: false,
     errPrint: true,
     outPrint: false,
     errSplit: false,
     outSplit: false,
+    outSplitRemoveTrailingElement: true,
+    errSplitRemoveTrailingElement: true,
     outIgnore: false,
     errIgnore: false,
-    slurp: true,
-    ignoreNodeSyserr: false,
-    keepTrailingNewline: false,
     invocationOpts: {}
   }
 };
@@ -121,10 +122,14 @@ function sys(){
   }
 }
 function sysdoExec(opts){
-  var cmd, oncomplete, args, ref$, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, invocationOpts;
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, invocationOpts;
   cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
-    : [], die = (ref$ = opts.die) != null
+    : [], outIgnore = (ref$ = opts.outIgnore) != null
+    ? ref$
+    : our.opts.outIgnore, errIgnore = (ref$ = opts.errIgnore) != null
+    ? ref$
+    : our.opts.errIgnore, die = (ref$ = opts.die) != null
     ? ref$
     : our.opts.die, verbose = (ref$ = opts.verbose) != null
     ? ref$
@@ -155,10 +160,14 @@ function sysdoExec(opts){
   }
 }
 function sysdoExecSync(opts){
-  var cmd, oncomplete, args, ref$, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outIgnore, errIgnore, outSplit, errSplit, invocationOpts, stderr, stdout, ret, e, pid, output, status, signal, error;
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, invocationOpts, stderr, stdout, ret, e, pid, output, status, signal, error;
   cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
-    : [], die = (ref$ = opts.die) != null
+    : [], outIgnore = (ref$ = opts.outIgnore) != null
+    ? ref$
+    : our.opts.outIgnore, errIgnore = (ref$ = opts.errIgnore) != null
+    ? ref$
+    : our.opts.errIgnore, die = (ref$ = opts.die) != null
     ? ref$
     : our.opts.die, verbose = (ref$ = opts.verbose) != null
     ? ref$
@@ -172,11 +181,7 @@ function sysdoExecSync(opts){
     ? ref$
     : our.opts.outPrint, errPrint = (ref$ = opts.errPrint) != null
     ? ref$
-    : our.opts.errPrint, outIgnore = (ref$ = opts.outIgnore) != null
-    ? ref$
-    : our.opts.outIgnore, errIgnore = (ref$ = opts.errIgnore) != null
-    ? ref$
-    : our.opts.errIgnore, outSplit = (ref$ = opts.outSplit) != null
+    : our.opts.errPrint, outSplit = (ref$ = opts.outSplit) != null
     ? ref$
     : our.opts.outSplit, errSplit = (ref$ = opts.errSplit) != null
     ? ref$
@@ -306,119 +311,80 @@ function sysdoExecAsync(opts){
     }
   }
 }
-/**
-  * @private
-  */
-function sysdoSpawn(arg$){
-  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, slurp, ignoreNodeSyserr, keepTrailingNewline, invocationOpts, syserrorFired, streamData, that, cmdBin, cmdArgs, spawned, streamConfig, handleDataAsList, handleData, thisError;
-  cmd = arg$.cmd, oncomplete = arg$.oncomplete, args = (ref$ = arg$.args) != null
+function sysdoSpawn(opts){
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, quietNodeSyserr, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, syserrorFired, streamData, that, spawned, streamConfigs, thisError;
+  cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
-    : [], outIgnore = (ref$ = arg$.outIgnore) != null
+    : [], outIgnore = (ref$ = opts.outIgnore) != null
     ? ref$
-    : our.opts.outIgnore, errIgnore = (ref$ = arg$.errIgnore) != null
+    : our.opts.outIgnore, errIgnore = (ref$ = opts.errIgnore) != null
     ? ref$
-    : our.opts.errIgnore, die = (ref$ = arg$.die) != null
+    : our.opts.errIgnore, die = (ref$ = opts.die) != null
     ? ref$
-    : our.opts.die, verbose = (ref$ = arg$.verbose) != null
+    : our.opts.die, verbose = (ref$ = opts.verbose) != null
     ? ref$
-    : our.opts.verbose, quiet = (ref$ = arg$.quiet) != null
+    : our.opts.verbose, quiet = (ref$ = opts.quiet) != null
     ? ref$
-    : our.opts.quiet, quietOnExit = (ref$ = arg$.quietOnExit) != null
+    : our.opts.quiet, quietOnExit = (ref$ = opts.quietOnExit) != null
     ? ref$
-    : our.opts.quietOnExit, sync = (ref$ = arg$.sync) != null
+    : our.opts.quietOnExit, sync = (ref$ = opts.sync) != null
     ? ref$
-    : our.opts.sync, outPrint = (ref$ = arg$.outPrint) != null
+    : our.opts.sync, outPrint = (ref$ = opts.outPrint) != null
     ? ref$
-    : our.opts.outPrint, errPrint = (ref$ = arg$.errPrint) != null
+    : our.opts.outPrint, errPrint = (ref$ = opts.errPrint) != null
     ? ref$
-    : our.opts.errPrint, outSplit = (ref$ = arg$.outSplit) != null
+    : our.opts.errPrint, outSplit = (ref$ = opts.outSplit) != null
     ? ref$
-    : our.opts.outSplit, errSplit = (ref$ = arg$.errSplit) != null
+    : our.opts.outSplit, errSplit = (ref$ = opts.errSplit) != null
     ? ref$
-    : our.opts.errSplit, slurp = (ref$ = arg$.slurp) != null
+    : our.opts.errSplit, quietNodeSyserr = (ref$ = opts.quietNodeSyserr) != null
     ? ref$
-    : our.opts.slurp, ignoreNodeSyserr = (ref$ = arg$.ignoreNodeSyserr) != null
+    : our.opts.quietNodeSyserr, outSplitRemoveTrailingElement = (ref$ = opts.outSplitRemoveTrailingElement) != null
     ? ref$
-    : our.opts.ignoreNodeSyserr, keepTrailingNewline = (ref$ = arg$.keepTrailingNewline) != null
+    : our.opts.outSplitRemoveTrailingElement, errSplitRemoveTrailingElement = (ref$ = opts.errSplitRemoveTrailingElement) != null
     ? ref$
-    : our.opts.keepTrailingNewline, invocationOpts = arg$.invocationOpts;
-  if (global.globFs == null) {
-    global.globFs = require('glob-fs');
-  }
+    : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
   syserrorFired = false;
   if (quiet) {
     quietOnExit = true;
+    quietNodeSyserr = true;
   }
-  streamData = {};
-  if (outSplit) {
-    streamData.out = [];
-  } else {
-    streamData.out = '';
+  streamData = {
+    out: outSplit ? [] : '',
+    err: errSplit ? [] : ''
+  };
+  if (outSplit === true) {
+    outSplit = '\n';
   }
-  if (errSplit) {
-    streamData.err = [];
-  } else {
-    streamData.err = '';
-  }
-  if (sync) {
-    iwarn("sys sync not implemented");
-    return;
+  if (errSplit === true) {
+    errSplit = '\n';
   }
   if ((that = oncomplete) != null) {
     if (!isFunc(that)) {
       return aerror();
     }
   }
-  ref$ = function(){
-    var parsedBin, parsedArgs;
-    throw Error('unimplemented');
-    parsedBin = parse.shift();
-    parsedArgs = [];
-    each(function(it){
-      var that;
-      if (isObj(it)) {
-        if (it.op === 'glob') {
-          if ((that = it.pattern) != null) {
-            return each(function(it){
-              return parsedArgs.push(it);
-            })(
-            globFs().readdirSync(that));
-          } else {
-            return iwarn("Can't deal with parsed arg:", it);
-          }
-        } else {
-          if ((that = it.op) != null) {
-            return parsedArgs.push(that);
-          } else {
-            return iwarn("Can't deal with parsed arg:", it);
-          }
-        }
-      } else {
-        return parsedArgs.push(it);
-      }
-    })(
-    parse);
-    return [parsedBin, parsedArgs.concat(args)];
-  }(), cmdBin = ref$[0], cmdArgs = ref$[1];
   if (verbose) {
     (function(){
       var printCmd, ind, spa, bul;
       printCmd = join(' ', [cmd].concat(map(shellQuote, args)));
-      ind = repeatString$(' ', Bullet.indent);
-      spa = repeatString$(' ', Bullet.spacing);
+      ind = repeatString$(' ', bulletGet('indent'));
+      spa = repeatString$(' ', bulletGet('spacing'));
       bul = green(bullet());
-      return log(ind + "" + bul + spa + printCmd);
+      return log(join('', array(ind, bul, spa, printCmd)));
     })();
   }
-  spawned = childProcess.spawn(cmdBin, cmdArgs, invocationOpts);
-  streamConfig = {
+  spawned = childProcess.spawn(cmd, args, invocationOpts);
+  streamConfigs = {
     out: {
       ignore: outIgnore,
       spawnStream: spawned.stdout,
       print: outPrint,
       list: outSplit,
       which: 'out',
-      procStream: process.stdout
+      procStream: process.stdout,
+      splitString: outSplit,
+      splitRemoveTrailingElement: outSplitRemoveTrailingElement
     },
     err: {
       ignore: errIgnore,
@@ -426,90 +392,48 @@ function sysdoSpawn(arg$){
       print: errPrint,
       list: errSplit,
       which: 'err',
-      procStream: process.stderr
+      procStream: process.stderr,
+      splitString: errSplit,
+      splitRemoveTrailingElement: errSplitRemoveTrailingElement
     }
   };
-  handleDataAsList = function(strc, str){
-    var stream, split, last, first, firstCurIsNewline, lastPrevWasPartial;
-    stream = streamData[strc.which];
-    split = split$.call(str, '\n');
-    if (stream.length > 0) {
-      last = stream[stream.length - 1];
-      first = split[0];
-      firstCurIsNewline = first === '';
-      lastPrevWasPartial = last !== '';
-      if (lastPrevWasPartial) {
-        if (firstCurIsNewline) {
-          split.shift();
-        } else {
-          stream[stream.length - 1] += split.shift();
-        }
-      } else {
-        stream.pop();
-      }
-    }
-    return each(partialize$.apply(stream, [stream.push, [void 8], [0]]), split);
-  };
-  handleData = function(strc, str){
-    if (strc.print) {
-      return strc.procStream.write(str);
-    } else {
-      if (strc.list) {
-        return handleDataAsList(strc, str);
-      } else {
-        return streamData[strc.which] += str;
-      }
-    }
-  };
-  each(function(it){
-    it.spawnStream.on('error', function(error){
-      return iwarn("Got error on stream std" + which + " (" + error + ")");
+  keys(streamConfigs).forEach(function(which){
+    var streamConfig;
+    streamConfig = streamConfigs[which];
+    streamConfig.spawnStream.on('error', function(error){
+      return warn("Got error on stream std" + which, error);
     });
-    if (it.ignore) {
+    if (streamConfig.ignore) {
       return;
     }
-    it.spawnStream.on('data', function(data){
+    streamConfig.spawnStream.on('data', function(data){
       var str;
       if (isString(data)) {
         str = data;
-      } else if (Buffer.isBuffer(data)) {
+      } else if (isBuffer(data)) {
         str = data.toString();
       } else {
         return iwarn("Doesn't seem to be a Buffer or a string");
       }
-      return handleData(it, str);
+      return handleStreamData(streamData, streamConfig, str);
     });
-    return it.spawnStream.on('end', function(){
-      var out;
-      if (!keepTrailingNewline) {
-        out = streamData.out;
-        if (outSplit) {
-          if (last(out) === '') {
-            return out.pop();
-          }
-        } else if (out.substring(out.length - 1) === '\n') {
-          return streamData.out = out.substring(0, out.length - 1);
+    return streamConfig.spawnStream.on('end', function(){
+      var splitRemoveTrailingElement, splitString, data;
+      splitRemoveTrailingElement = streamConfig.splitRemoveTrailingElement, splitString = streamConfig.splitString;
+      if (splitRemoveTrailingElement && splitString) {
+        data = streamData[which];
+        if ('' === last(data)) {
+          return data.pop();
         }
       }
     });
-  })(
-  values(streamConfig));
+  });
   thisError = function(args){
-    return syserror(mergeObjects(args, {
-      cmd: cmd,
-      oncomplete: oncomplete,
-      die: die,
-      quiet: quiet,
-      quietOnExit: quietOnExit,
-      out: streamData.out,
-      err: streamData.err
-    }));
+    return syserror((args.cmd = cmd, args.oncomplete = oncomplete, args.die = die, args.quiet = quiet, args.quietOnExit = quietOnExit, args.out = streamData.out, args.stdout = streamData.out, args.err = streamData.err, args));
   };
   spawned.on('error', function(errobj){
-    var errmsg, syserrorFired;
-    errmsg = errobj.message;
-    if (!ignoreNodeSyserr) {
-      handleData(streamConfig.err, errmsg);
+    if (!quietNodeSyserr) {
+      handleData(streamConfig.err, errobj.message);
     }
     if (!syserrorFired) {
       syserrorFired = true;
@@ -517,32 +441,29 @@ function sysdoSpawn(arg$){
     }
   });
   spawned.on('close', function(code, signal){
-    var syserrorFired;
     if (code !== 0) {
       if (!syserrorFired) {
         syserrorFired = true;
-        return thisError({
+        thisError({
           code: code,
           signal: signal
         });
       }
-    } else {
-      if (oncomplete != null) {
-        return oncomplete({
-          ok: true,
-          signal: signal,
-          code: code,
-          out: streamData.out,
-          err: streamData.err
-        });
-      }
+      return;
+    }
+    if (oncomplete) {
+      return oncomplete({
+        ok: true,
+        signal: signal,
+        code: code,
+        out: streamData.out,
+        stdout: streamData.out,
+        err: streamData.err
+      });
     }
   });
   return spawned;
 }
-/**
- * @private
- */
 function syserror(arg$){
   var cmd, code, signal, oncomplete, out, err, die, quiet, quietOnExit, strSig, strCmd, strExit, str;
   cmd = arg$.cmd, code = arg$.code, signal = arg$.signal, oncomplete = arg$.oncomplete, out = arg$.out, err = arg$.err, die = arg$.die, quiet = arg$.quiet, quietOnExit = arg$.quietOnExit;
@@ -610,6 +531,7 @@ function sysProcessArgs(){
     opts.cmd = cmd;
     opts.args = args;
   } else if (numArgs === 3 && isArr(argsArray[1]) && isFunc(argsArray[2])) {
+    log('6');
     cmd = argsArray[0], args = argsArray[1], oncomplete = argsArray[2];
     opts = {
       cmd: cmd,
@@ -697,6 +619,43 @@ function outputToScalarOrList(output, doSplit){
   }
   return output;
 }
+function handleStreamData(streamData, streamConfig, string){
+  var print, procStream, list, handle;
+  print = streamConfig.print, procStream = streamConfig.procStream, list = streamConfig.list;
+  if (print) {
+    procStream.write(string + '\n');
+    return;
+  }
+  handle = list ? handleStreamDataAsList : handleStreamDataAsScalar;
+  return handle(streamData, streamConfig, string);
+}
+function handleStreamDataAsScalar(streamData, streamConfig, string){
+  return streamData[streamConfig.which] += string;
+}
+function handleStreamDataAsList(streamData, streamConfig, string){
+  var which, splitString, stream, split, last, first, firstCurIsNewline, lastPrevWasPartial;
+  which = streamConfig.which, splitString = streamConfig.splitString;
+  stream = streamData[which];
+  split = string.split(splitString);
+  if (stream.length > 0) {
+    last = stream[stream.length - 1];
+    first = split[0];
+    firstCurIsNewline = first === '';
+    lastPrevWasPartial = last !== '';
+    if (lastPrevWasPartial) {
+      if (firstCurIsNewline) {
+        split.shift();
+      } else {
+        stream[stream.length - 1] += split.shift();
+      }
+    } else {
+      stream.pop();
+    }
+  }
+  return split.forEach(function(it){
+    return stream.push(it);
+  });
+}
 function import$(obj, src){
   var own = {}.hasOwnProperty;
   for (var key in src) if (own.call(src, key)) obj[key] = src[key];
@@ -705,15 +664,4 @@ function import$(obj, src){
 function repeatString$(str, n){
   for (var r = ''; n > 0; (n >>= 1) && (str += str)) if (n & 1) r += str;
   return r;
-}
-function partialize$(f, args, where){
-  var context = this;
-  return function(){
-    var params = slice$.call(arguments), i,
-        len = params.length, wlen = where.length,
-        ta = args ? args.concat() : [], tw = where ? where.concat() : [];
-    for(i = 0; i < len; ++i) { ta[tw[0]] = params[i]; tw.shift(); }
-    return len < wlen && len ?
-      partialize$.apply(context, [f, ta, tw]) : f.apply(context, ta);
-  };
 }

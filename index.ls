@@ -87,9 +87,7 @@ Identifier.color = {
 }
 
 Identifier.types = {
-    is-int, is-integer, is-positive-int, is-non-negative-int, is-num,
-    is-number, is-array, is-arr, is-obj, is-object, is-str, is-string,
-    is-bool, is-boolean, is-func, is-function, is-a-num, is-a-number, is-buffer,
+    of-number, of-object, ok-number, is-array, is-object, is-string, is-boolean, is-function, is-integer, is-integer-strict, is-number, is-number-strict, is-integer-positive, is-integer-non-negative, is-buffer, of-num, of-obj, ok-num, is-arr, is-obj, is-str, is-bool, is-func, is-int, is-int-strict, is-num, is-num-strict, is-int-pos, is-int-non-neg, is-buf,
 }
 
 Identifier.sys = {

@@ -1,4 +1,4 @@
-var ref$, curry, values, join, config, our, out$ = typeof exports != 'undefined' && exports || this, toString$ = {}.toString, slice$ = [].slice;
+var ref$, curry, values, join, array, config, our, out$ = typeof exports != 'undefined' && exports || this, toString$ = {}.toString, slice$ = [].slice;
 out$.bulletSet = bulletSet;
 out$.bulletGet = bulletGet;
 out$.bullet = bullet;
@@ -17,6 +17,7 @@ out$.brightCyan = brightCyan;
 out$.magenta = magenta;
 out$.brightMagenta = brightMagenta;
 ref$ = require("prelude-ls"), curry = ref$.curry, values = ref$.values, join = ref$.join;
+array = require('./util').array;
 config = {
   bullets: {
     ghost: '꣐',

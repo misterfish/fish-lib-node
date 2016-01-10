@@ -131,6 +131,9 @@ function okNum(){
 function isNum(){
   return isNumber.apply(this, arguments);
 }
+function isNumStrict(){
+  return isNumberStrict.apply(this, arguments);
+}
 function isObj(){
   return isObject.apply(this, arguments);
 }
@@ -148,6 +151,9 @@ function isArr(){
 }
 function isInt(){
   return isInteger.apply(this, arguments);
+}
+function isIntStrict(){
+  return isIntegerStrict.apply(this, arguments);
 }
 function isBuf(){
   return isBuffer.apply(this, arguments);
