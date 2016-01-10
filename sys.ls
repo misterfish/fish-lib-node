@@ -216,13 +216,12 @@ our =
         # non-zero exit status even if they ran mostly ok.
         quiet-on-exit: false
 
-        # --- hide ugly error messages from node (e.g. spawn ENOENT) (spawn
-        # only).
-        quiet-node-syserr: false
+        # --- hide ugly error messages like 'spawn ENOENT'.
+        quiet-node-err: false
 
         # --- suppress all warnings.
         #
-        # implies 'quiet-on-exit' and 'quiet-node-syserr'.
+        # implies 'quiet-on-exit' and 'quiet-node-err'.
         #
         # will be ignored if mixed with 'die'.
         quiet: false
@@ -361,6 +360,8 @@ function sysdo-exec opts
         err-print = our.opts.err-print,
         out-split = our.opts.out-split,
         err-split = our.opts.err-split,
+        out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element,
+        err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element,
 
         invocation-opts,
 
@@ -391,11 +392,14 @@ function sysdo-exec-sync opts
         verbose = our.opts.verbose,
         quiet = our.opts.quiet,
         quiet-on-exit = our.opts.quiet-on-exit,
+        quiet-node-err = our.opts.quiet-node-err,
         sync = our.opts.sync,
         out-print = our.opts.out-print,
         err-print = our.opts.err-print,
         out-split = our.opts.out-split,
         err-split = our.opts.err-split,
+        out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element,
+        err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element,
 
         invocation-opts,
 
@@ -431,7 +435,10 @@ function sysdo-exec-sync opts
     # --- exec-sync throws.
     try
         stdout = child-process.exec-sync cmd, opts
-        stdout = output-to-scalar-or-list stdout, out-split
+        stdout = output-to-scalar-or-list do
+            stdout
+            out-split
+            out-split-remove-trailing-element
         ret =
             ok: true
             code: 0
@@ -439,14 +446,22 @@ function sysdo-exec-sync opts
             stdout: stdout
             stderr: stderr
         oncomplete ret if oncomplete
-    catch e
+    catch err
         # --- stderr has already been sent to the parent stream
         # (printed to stderr by default).
         #
-        # node has already done a split for us (output) but we ignore it.
-        { pid, output, stdout, stderr, status, signal, error } = e
+        # output param is just an array containing stdout and stderr.
+        { pid, output, stdout, stderr, status, signal, } = err
+        the-error = err.error
 
-        stdout = output-to-scalar-or-list stdout, out-split
+        stdout = output-to-scalar-or-list do
+            stdout
+            out-split
+            out-split-remove-trailing-element
+        stderr = output-to-scalar-or-list do
+            stderr
+            err-split
+            err-split-remove-trailing-element
 
         ret =
             ok: false
@@ -459,7 +474,7 @@ function sysdo-exec-sync opts
         # --- do some common error handling, then call oncomplete if it's
         # there, then return the ret object.
         syserror do
-            { cmd, code: status, signal, oncomplete, stdout, stderr, die, quiet, quiet-on-exit, }
+            { cmd, code: status, signal, oncomplete, node-err: the-error, stdout, stderr, die, quiet, quiet-on-exit, quiet-node-err, }
 
     # | try exec
     ret
@@ -482,6 +497,8 @@ function sysdo-exec-async opts
         err-print = our.opts.err-print,
         out-split = our.opts.out-split,
         err-split = our.opts.err-split,
+        out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element,
+        err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element,
 
         invocation-opts,
 
@@ -491,7 +508,7 @@ function sysdo-exec-async opts
     # flags.
 
     on-child = (err, stdout, stderr) ->
-        process.stderr.write stderr if err-print
+        console.warn stderr if err-print
         process.stdout.write stdout if out-print
 
         if err
@@ -506,13 +523,19 @@ function sysdo-exec-async opts
 
             # --- do some common error handling, then call oncomplete.
             return syserror do
-                { cmd, code, signal, oncomplete, stdout, stderr, die, quiet, quiet-on-exit, }
+                { cmd, code, signal, oncomplete, err, stdout, stderr, die, quiet, quiet-on-exit, quiet-node-err, }
 
-        stdout = output-to-scalar-or-list stdout, out-split
-        stderr = output-to-scalar-or-list stderr, err-split
+        stdout = output-to-scalar-or-list do
+            stdout
+            out-split
+            out-split-remove-trailing-element
+        stderr = output-to-scalar-or-list do
+            stderr
+            err-split
+            err-split-remove-trailing-element
 
         # --- ok.
-        oncomplete { ok: true, out: stdout, stdout, stderr } if oncomplete?
+        oncomplete { ok: true, out: stdout, stdout, stderr, } if oncomplete?
 
     child = child-process.exec cmd, invocation-opts, on-child
 
@@ -548,7 +571,7 @@ function sysdo-spawn opts
         out-split = our.opts.out-split,
         err-split = our.opts.err-split,
 
-        quiet-node-syserr = our.opts.quiet-node-syserr,
+        quiet-node-err = our.opts.quiet-node-err,
 
         out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element
         err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element
@@ -556,22 +579,12 @@ function sysdo-spawn opts
         invocation-opts,
     } = opts
 
-    syserror-fired = false
-
     if quiet
-        quiet-on-exit = true
-        quiet-node-syserr = true
+        quiet-on-exit = opts.quiet-on-exit = true
+        quiet-node-err = opts.quiet-node-err = true
 
-    stream-data =
-        # --- [] | ''
-        #
-        # here we store the data which appears on the streams we are
-        # listening on.
-        out: if out-split then [] else ''
-        err: if err-split then [] else ''
-
-    if out-split == true then out-split = '\n'
-    if err-split == true then err-split = '\n'
+    if out-split == true then out-split = opts.out-split = '\n'
+    if err-split == true then err-split = opts.err-split = '\n'
 
     if oncomplete?
         return aerror() unless is-func that
@@ -582,6 +595,122 @@ function sysdo-spawn opts
         spa = ' ' * bullet-get 'spacing'
         bul = green bullet()
         log join '' array ind, bul, spa, print-cmd
+
+    if sync
+        sysdo-spawn-sync opts
+    else
+        sysdo-spawn-async opts
+
+function sysdo-spawn-sync opts
+    {
+        cmd,
+        oncomplete,
+        args = [],
+
+        out-ignore = our.opts.out-ignore,
+        err-ignore = our.opts.err-ignore,
+
+        die = our.opts.die,
+        verbose = our.opts.verbose,
+        quiet = our.opts.quiet,
+        quiet-on-exit = our.opts.quiet-on-exit,
+        quiet-node-err = our.opts.quiet-node-err,
+        sync = our.opts.sync,
+        out-print = our.opts.out-print,
+        err-print = our.opts.err-print,
+        out-split = our.opts.out-split,
+        err-split = our.opts.err-split,
+
+        out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element
+        err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element
+
+        invocation-opts,
+    } = opts
+
+    ret = child-process.spawn-sync cmd, args, invocation-opts
+
+    # --- output param is just an array containing stdout and stderr.
+    { pid, output, stdout, stderr, status, signal, } = ret
+    the-error = ret.error
+
+    stdout = ret.stdout = output-to-scalar-or-list do
+        stdout
+        out-split
+        out-split-remove-trailing-element
+    stderr = ret.stderr = output-to-scalar-or-list do
+        stderr
+        err-split
+        err-split-remove-trailing-element
+
+    # --- e.g. /nonexistent/cmd
+    if the-error
+        # --- do some common error handling, then call oncomplete if it's
+        # there, then return the ret object.
+        syserror {
+            cmd, oncomplete,
+            die, quiet, quiet-on-exit, quiet-node-err,
+            signal,
+            code: status,
+            node-err: the-error.to-string(),
+            stdout, stderr,
+        }
+        return ret
+
+    # --- e.g. find /nonexistent/file
+    if status
+        # --- do some common error handling, then call oncomplete if it's
+        # there, then return the ret object.
+        syserror {
+            cmd, oncomplete,
+            die, quiet, quiet-on-exit, quiet-node-err,
+            signal,
+            code: status,
+            stdout, stderr,
+        }
+        return ret
+
+    # --- ok.
+    #
+    # call oncomplete if it's there, then return the ret object.
+
+    oncomplete { ok: true, out: stdout, stdout, stderr, } if oncomplete?
+
+    ret
+
+function sysdo-spawn-async opts
+    {
+        cmd,
+        oncomplete,
+        args = [],
+
+        out-ignore = our.opts.out-ignore,
+        err-ignore = our.opts.err-ignore,
+
+        die = our.opts.die,
+        verbose = our.opts.verbose,
+        quiet = our.opts.quiet,
+        quiet-on-exit = our.opts.quiet-on-exit,
+        sync = our.opts.sync,
+        out-print = our.opts.out-print,
+        err-print = our.opts.err-print,
+        out-split = our.opts.out-split,
+        err-split = our.opts.err-split,
+
+        quiet-node-err = our.opts.quiet-node-err,
+
+        out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element
+        err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element
+
+        invocation-opts,
+    } = opts
+
+    syserror-fired = false
+
+    stream-data =
+        # --- here we store the data which appears on the streams we are
+        # listening on in either an array or a scalar.
+        out: if out-split then [] else ''
+        err: if err-split then [] else ''
 
     spawned = child-process.spawn cmd, args, invocation-opts
 
@@ -641,7 +770,7 @@ function sysdo-spawn opts
     #
     # in the case of an error event, we won't have code or signal. 
     #
-    # e.g.: /nonexistent/cmd abc
+    # e.g.: /nonexistent/cmd
     #
     # the 'exit' signal might also fire, in which case, do nothing.
     # 
@@ -653,15 +782,14 @@ function sysdo-spawn opts
     # --- this will be called by either the 'close' event or 'error' event
     # and route the params through to syserror().
     do-syserror = (args) ->
-        syserror args <<< {
+        syserror {
             cmd, oncomplete,
-            die, quiet, quiet-on-exit,
-            out: stream-data.out,
+            die, quiet, quiet-on-exit, quiet-node-err,
             stdout: stream-data.out,
-            err: stream-data.err,
-        }
+            stderr: stream-data.err,
+        } <<< args
 
-    # --- error, e.g.: /nonexistent/cmd abc
+    # --- error, e.g.: /nonexistent/cmd
     #
     # not fired if killed by a signal.
     #
@@ -669,21 +797,15 @@ function sysdo-spawn opts
     # probably never will). 
 
     spawned.on 'error' (errobj) ->
-        # --- this is a very nodey message (e.g. spawn ENOENT).
-        #
-        # if you're looking for something like 'bash: finderjsdf: command
+        # --- note, if you're looking for something like 'bash: finderjsdf: command
         # not found', forget it ... there is no shell spawned.
-        #
-        # in the future we might provide an opt to capture this error, but
-        # let the other one flow to stderr.
-
-        if not quiet-node-syserr
-            handle-data stream-config.err, errobj.message
 
         if not syserror-fired
             syserror-fired := true
+
             # --- calls oncomplete.
-            return do-syserror {}
+            return do-syserror node-err: errobj.to-string()
+
     # | -> on error
 
     # --- the 'exit' event is for when the process exits, but the streams
@@ -706,14 +828,13 @@ function sysdo-spawn opts
             return
 
         # --- all good.
-        if oncomplete then oncomplete {
-            ok: true,
-            signal,
-            code,
-            out: stream-data.out,
-            stdout: stream-data.out,
-            err: stream-data.err
-        }
+        if oncomplete then oncomplete do
+            ok: true
+            signal: signal
+            code: code
+            out: stream-data.out
+            stdout: stream-data.out
+            stderr: stream-data.err
     # | -> on close
 
     spawned
@@ -721,33 +842,36 @@ function sysdo-spawn opts
 # | sysdo-spawn
 
 # --- @private
-function syserror ({ cmd, code, signal, oncomplete, out, err, die, quiet, quiet-on-exit })
+function syserror ({ cmd, code, signal, oncomplete, node-err, stdout, stderr, die, quiet, quiet-on-exit, quiet-node-err, })
     str-sig = " «got signal #{ cyan signal }»" if signal
-    str-cmd = " «#{ bright-red cmd }»"
+    str-cmd = " #{ bright-red cmd }"
 
-    # code can be undefined, e.g. when exiting on signal, or when the command
-    # failed to even start.
+    # --- code can be undefined, e.g. when exiting on signal, or when the
+    # command failed to even start.
 
     str-exit = " «exit status #{ yellow code }»" if code?
+
+    str-node-err = " «#{node-err}»" if node-err and not quiet-node-err
 
     str = join '', compact array do
         "Couldn't execute cmd"
         str-cmd
         str-exit
         str-sig
+        str-node-err
 
     if die
         error str
         process.exit code
     else
-        # command started but ended badly
+        # --- command started but ended badly.
         if code?
             warn str unless quiet-on-exit
-        # command didn't start or ended on a signal
+        # --- command didn't start or ended on a signal.
         else
             warn str unless quiet
 
-    oncomplete { ok: false, code, signal, out, err } if oncomplete?
+    oncomplete { ok: false, code, signal, out: stdout, stdout, stderr } if oncomplete?
 
 # | syserror
 
@@ -841,13 +965,15 @@ function sys-process-args ...args-array
     opts
         ..type = type
 
-function output-to-scalar-or-list output, do-split
+function output-to-scalar-or-list output, do-split, split-remove-trailing-element
     # --- it is Buffer|String.
     output .= to-string() if is-buffer output
 
     if do-split then
         do-split = '\n' if do-split is true
         output .= split // #do-split //
+        if split-remove-trailing-element
+            output.pop() if '' == last output
     output
 
 function handle-stream-data stream-data, stream-config, string

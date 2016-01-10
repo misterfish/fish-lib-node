@@ -23,7 +23,7 @@ our = {
     die: false,
     verbose: true,
     quietOnExit: false,
-    quietNodeSyserr: false,
+    quietNodeErr: false,
     quiet: false,
     sync: false,
     errPrint: true,
@@ -122,7 +122,7 @@ function sys(){
   }
 }
 function sysdoExec(opts){
-  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, invocationOpts;
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts;
   cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
     : [], outIgnore = (ref$ = opts.outIgnore) != null
@@ -147,7 +147,11 @@ function sysdoExec(opts){
     ? ref$
     : our.opts.outSplit, errSplit = (ref$ = opts.errSplit) != null
     ? ref$
-    : our.opts.errSplit, invocationOpts = opts.invocationOpts;
+    : our.opts.errSplit, outSplitRemoveTrailingElement = (ref$ = opts.outSplitRemoveTrailingElement) != null
+    ? ref$
+    : our.opts.outSplitRemoveTrailingElement, errSplitRemoveTrailingElement = (ref$ = opts.errSplitRemoveTrailingElement) != null
+    ? ref$
+    : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
   args.unshift(cmd);
   cmd = args.join(' ');
   if (verbose) {
@@ -160,7 +164,7 @@ function sysdoExec(opts){
   }
 }
 function sysdoExecSync(opts){
-  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, invocationOpts, stderr, stdout, ret, e, pid, output, status, signal, error;
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, quietNodeErr, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, stderr, stdout, ret, err, pid, output, status, signal, theError;
   cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
     : [], outIgnore = (ref$ = opts.outIgnore) != null
@@ -175,7 +179,9 @@ function sysdoExecSync(opts){
     ? ref$
     : our.opts.quiet, quietOnExit = (ref$ = opts.quietOnExit) != null
     ? ref$
-    : our.opts.quietOnExit, sync = (ref$ = opts.sync) != null
+    : our.opts.quietOnExit, quietNodeErr = (ref$ = opts.quietNodeErr) != null
+    ? ref$
+    : our.opts.quietNodeErr, sync = (ref$ = opts.sync) != null
     ? ref$
     : our.opts.sync, outPrint = (ref$ = opts.outPrint) != null
     ? ref$
@@ -185,7 +191,11 @@ function sysdoExecSync(opts){
     ? ref$
     : our.opts.outSplit, errSplit = (ref$ = opts.errSplit) != null
     ? ref$
-    : our.opts.errSplit, invocationOpts = opts.invocationOpts;
+    : our.opts.errSplit, outSplitRemoveTrailingElement = (ref$ = opts.outSplitRemoveTrailingElement) != null
+    ? ref$
+    : our.opts.outSplitRemoveTrailingElement, errSplitRemoveTrailingElement = (ref$ = opts.errSplitRemoveTrailingElement) != null
+    ? ref$
+    : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
   opts = {
     stdio: array(0, outIgnore
       ? 'ignore'
@@ -197,7 +207,7 @@ function sysdoExecSync(opts){
   stderr = '<suppressed or empty>';
   try {
     stdout = childProcess.execSync(cmd, opts);
-    stdout = outputToScalarOrList(stdout, outSplit);
+    stdout = outputToScalarOrList(stdout, outSplit, outSplitRemoveTrailingElement);
     ret = {
       ok: true,
       code: 0,
@@ -209,9 +219,11 @@ function sysdoExecSync(opts){
       oncomplete(ret);
     }
   } catch (e$) {
-    e = e$;
-    pid = e.pid, output = e.output, stdout = e.stdout, stderr = e.stderr, status = e.status, signal = e.signal, error = e.error;
-    stdout = outputToScalarOrList(stdout, outSplit);
+    err = e$;
+    pid = err.pid, output = err.output, stdout = err.stdout, stderr = err.stderr, status = err.status, signal = err.signal;
+    theError = err.error;
+    stdout = outputToScalarOrList(stdout, outSplit, outSplitRemoveTrailingElement);
+    stderr = outputToScalarOrList(stderr, errSplit, errSplitRemoveTrailingElement);
     ret = {
       ok: false,
       code: status,
@@ -225,17 +237,19 @@ function sysdoExecSync(opts){
       code: status,
       signal: signal,
       oncomplete: oncomplete,
+      nodeErr: theError,
       stdout: stdout,
       stderr: stderr,
       die: die,
       quiet: quiet,
-      quietOnExit: quietOnExit
+      quietOnExit: quietOnExit,
+      quietNodeErr: quietNodeErr
     });
   }
   return ret;
 }
 function sysdoExecAsync(opts){
-  var cmd, oncomplete, args, ref$, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, invocationOpts, onChild, child, complain;
+  var cmd, oncomplete, args, ref$, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, onChild, child, complain;
   cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
     : [], die = (ref$ = opts.die) != null
@@ -256,11 +270,15 @@ function sysdoExecAsync(opts){
     ? ref$
     : our.opts.outSplit, errSplit = (ref$ = opts.errSplit) != null
     ? ref$
-    : our.opts.errSplit, invocationOpts = opts.invocationOpts;
+    : our.opts.errSplit, outSplitRemoveTrailingElement = (ref$ = opts.outSplitRemoveTrailingElement) != null
+    ? ref$
+    : our.opts.outSplitRemoveTrailingElement, errSplitRemoveTrailingElement = (ref$ = opts.errSplitRemoveTrailingElement) != null
+    ? ref$
+    : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
   onChild = function(err, stdout, stderr){
     var signal, code;
     if (errPrint) {
-      process.stderr.write(stderr);
+      console.warn(stderr);
     }
     if (outPrint) {
       process.stdout.write(stdout);
@@ -280,15 +298,17 @@ function sysdoExecAsync(opts){
         code: code,
         signal: signal,
         oncomplete: oncomplete,
+        err: err,
         stdout: stdout,
         stderr: stderr,
         die: die,
         quiet: quiet,
-        quietOnExit: quietOnExit
+        quietOnExit: quietOnExit,
+        quietNodeErr: quietNodeErr
       });
     }
-    stdout = outputToScalarOrList(stdout, outSplit);
-    stderr = outputToScalarOrList(stderr, errSplit);
+    stdout = outputToScalarOrList(stdout, outSplit, outSplitRemoveTrailingElement);
+    stderr = outputToScalarOrList(stderr, errSplit, errSplitRemoveTrailingElement);
     if (oncomplete != null) {
       return oncomplete({
         ok: true,
@@ -312,7 +332,7 @@ function sysdoExecAsync(opts){
   }
 }
 function sysdoSpawn(opts){
-  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, quietNodeSyserr, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, syserrorFired, streamData, that, spawned, streamConfigs, thisError;
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, quietNodeErr, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, that;
   cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
     : [], outIgnore = (ref$ = opts.outIgnore) != null
@@ -337,27 +357,22 @@ function sysdoSpawn(opts){
     ? ref$
     : our.opts.outSplit, errSplit = (ref$ = opts.errSplit) != null
     ? ref$
-    : our.opts.errSplit, quietNodeSyserr = (ref$ = opts.quietNodeSyserr) != null
+    : our.opts.errSplit, quietNodeErr = (ref$ = opts.quietNodeErr) != null
     ? ref$
-    : our.opts.quietNodeSyserr, outSplitRemoveTrailingElement = (ref$ = opts.outSplitRemoveTrailingElement) != null
+    : our.opts.quietNodeErr, outSplitRemoveTrailingElement = (ref$ = opts.outSplitRemoveTrailingElement) != null
     ? ref$
     : our.opts.outSplitRemoveTrailingElement, errSplitRemoveTrailingElement = (ref$ = opts.errSplitRemoveTrailingElement) != null
     ? ref$
     : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
-  syserrorFired = false;
   if (quiet) {
-    quietOnExit = true;
-    quietNodeSyserr = true;
+    quietOnExit = opts.quietOnExit = true;
+    quietNodeErr = opts.quietNodeErr = true;
   }
-  streamData = {
-    out: outSplit ? [] : '',
-    err: errSplit ? [] : ''
-  };
   if (outSplit === true) {
-    outSplit = '\n';
+    outSplit = opts.outSplit = '\n';
   }
   if (errSplit === true) {
-    errSplit = '\n';
+    errSplit = opts.errSplit = '\n';
   }
   if ((that = oncomplete) != null) {
     if (!isFunc(that)) {
@@ -374,6 +389,129 @@ function sysdoSpawn(opts){
       return log(join('', array(ind, bul, spa, printCmd)));
     })();
   }
+  if (sync) {
+    return sysdoSpawnSync(opts);
+  } else {
+    return sysdoSpawnAsync(opts);
+  }
+}
+function sysdoSpawnSync(opts){
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, quietNodeErr, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, ret, pid, output, stdout, stderr, status, signal, theError;
+  cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
+    ? ref$
+    : [], outIgnore = (ref$ = opts.outIgnore) != null
+    ? ref$
+    : our.opts.outIgnore, errIgnore = (ref$ = opts.errIgnore) != null
+    ? ref$
+    : our.opts.errIgnore, die = (ref$ = opts.die) != null
+    ? ref$
+    : our.opts.die, verbose = (ref$ = opts.verbose) != null
+    ? ref$
+    : our.opts.verbose, quiet = (ref$ = opts.quiet) != null
+    ? ref$
+    : our.opts.quiet, quietOnExit = (ref$ = opts.quietOnExit) != null
+    ? ref$
+    : our.opts.quietOnExit, quietNodeErr = (ref$ = opts.quietNodeErr) != null
+    ? ref$
+    : our.opts.quietNodeErr, sync = (ref$ = opts.sync) != null
+    ? ref$
+    : our.opts.sync, outPrint = (ref$ = opts.outPrint) != null
+    ? ref$
+    : our.opts.outPrint, errPrint = (ref$ = opts.errPrint) != null
+    ? ref$
+    : our.opts.errPrint, outSplit = (ref$ = opts.outSplit) != null
+    ? ref$
+    : our.opts.outSplit, errSplit = (ref$ = opts.errSplit) != null
+    ? ref$
+    : our.opts.errSplit, outSplitRemoveTrailingElement = (ref$ = opts.outSplitRemoveTrailingElement) != null
+    ? ref$
+    : our.opts.outSplitRemoveTrailingElement, errSplitRemoveTrailingElement = (ref$ = opts.errSplitRemoveTrailingElement) != null
+    ? ref$
+    : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
+  ret = childProcess.spawnSync(cmd, args, invocationOpts);
+  pid = ret.pid, output = ret.output, stdout = ret.stdout, stderr = ret.stderr, status = ret.status, signal = ret.signal;
+  theError = ret.error;
+  stdout = ret.stdout = outputToScalarOrList(stdout, outSplit, outSplitRemoveTrailingElement);
+  stderr = ret.stderr = outputToScalarOrList(stderr, errSplit, errSplitRemoveTrailingElement);
+  if (theError) {
+    syserror({
+      cmd: cmd,
+      oncomplete: oncomplete,
+      die: die,
+      quiet: quiet,
+      quietOnExit: quietOnExit,
+      quietNodeErr: quietNodeErr,
+      signal: signal,
+      code: status,
+      nodeErr: theError.toString(),
+      stdout: stdout,
+      stderr: stderr
+    });
+    return ret;
+  }
+  if (status) {
+    syserror({
+      cmd: cmd,
+      oncomplete: oncomplete,
+      die: die,
+      quiet: quiet,
+      quietOnExit: quietOnExit,
+      quietNodeErr: quietNodeErr,
+      signal: signal,
+      code: status,
+      stdout: stdout,
+      stderr: stderr
+    });
+    return ret;
+  }
+  if (oncomplete != null) {
+    oncomplete({
+      ok: true,
+      out: stdout,
+      stdout: stdout,
+      stderr: stderr
+    });
+  }
+  return ret;
+}
+function sysdoSpawnAsync(opts){
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, quietNodeErr, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, syserrorFired, streamData, spawned, streamConfigs, doSyserror;
+  cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
+    ? ref$
+    : [], outIgnore = (ref$ = opts.outIgnore) != null
+    ? ref$
+    : our.opts.outIgnore, errIgnore = (ref$ = opts.errIgnore) != null
+    ? ref$
+    : our.opts.errIgnore, die = (ref$ = opts.die) != null
+    ? ref$
+    : our.opts.die, verbose = (ref$ = opts.verbose) != null
+    ? ref$
+    : our.opts.verbose, quiet = (ref$ = opts.quiet) != null
+    ? ref$
+    : our.opts.quiet, quietOnExit = (ref$ = opts.quietOnExit) != null
+    ? ref$
+    : our.opts.quietOnExit, sync = (ref$ = opts.sync) != null
+    ? ref$
+    : our.opts.sync, outPrint = (ref$ = opts.outPrint) != null
+    ? ref$
+    : our.opts.outPrint, errPrint = (ref$ = opts.errPrint) != null
+    ? ref$
+    : our.opts.errPrint, outSplit = (ref$ = opts.outSplit) != null
+    ? ref$
+    : our.opts.outSplit, errSplit = (ref$ = opts.errSplit) != null
+    ? ref$
+    : our.opts.errSplit, quietNodeErr = (ref$ = opts.quietNodeErr) != null
+    ? ref$
+    : our.opts.quietNodeErr, outSplitRemoveTrailingElement = (ref$ = opts.outSplitRemoveTrailingElement) != null
+    ? ref$
+    : our.opts.outSplitRemoveTrailingElement, errSplitRemoveTrailingElement = (ref$ = opts.errSplitRemoveTrailingElement) != null
+    ? ref$
+    : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
+  syserrorFired = false;
+  streamData = {
+    out: outSplit ? [] : '',
+    err: errSplit ? [] : ''
+  };
   spawned = childProcess.spawn(cmd, args, invocationOpts);
   streamConfigs = {
     out: {
@@ -428,23 +566,31 @@ function sysdoSpawn(opts){
       }
     });
   });
-  thisError = function(args){
-    return syserror((args.cmd = cmd, args.oncomplete = oncomplete, args.die = die, args.quiet = quiet, args.quietOnExit = quietOnExit, args.out = streamData.out, args.stdout = streamData.out, args.err = streamData.err, args));
+  doSyserror = function(args){
+    return syserror(import$({
+      cmd: cmd,
+      oncomplete: oncomplete,
+      die: die,
+      quiet: quiet,
+      quietOnExit: quietOnExit,
+      quietNodeErr: quietNodeErr,
+      stdout: streamData.out,
+      stderr: streamData.err
+    }, args));
   };
   spawned.on('error', function(errobj){
-    if (!quietNodeSyserr) {
-      handleData(streamConfig.err, errobj.message);
-    }
     if (!syserrorFired) {
       syserrorFired = true;
-      return thisError({});
+      return doSyserror({
+        nodeErr: errobj.toString()
+      });
     }
   });
   spawned.on('close', function(code, signal){
     if (code !== 0) {
       if (!syserrorFired) {
         syserrorFired = true;
-        thisError({
+        doSyserror({
           code: code,
           signal: signal
         });
@@ -458,23 +604,26 @@ function sysdoSpawn(opts){
         code: code,
         out: streamData.out,
         stdout: streamData.out,
-        err: streamData.err
+        stderr: streamData.err
       });
     }
   });
   return spawned;
 }
 function syserror(arg$){
-  var cmd, code, signal, oncomplete, out, err, die, quiet, quietOnExit, strSig, strCmd, strExit, str;
-  cmd = arg$.cmd, code = arg$.code, signal = arg$.signal, oncomplete = arg$.oncomplete, out = arg$.out, err = arg$.err, die = arg$.die, quiet = arg$.quiet, quietOnExit = arg$.quietOnExit;
+  var cmd, code, signal, oncomplete, nodeErr, stdout, stderr, die, quiet, quietOnExit, quietNodeErr, strSig, strCmd, strExit, strNodeErr, str;
+  cmd = arg$.cmd, code = arg$.code, signal = arg$.signal, oncomplete = arg$.oncomplete, nodeErr = arg$.nodeErr, stdout = arg$.stdout, stderr = arg$.stderr, die = arg$.die, quiet = arg$.quiet, quietOnExit = arg$.quietOnExit, quietNodeErr = arg$.quietNodeErr;
   if (signal) {
     strSig = " «got signal " + cyan(signal) + "»";
   }
-  strCmd = " «" + brightRed(cmd) + "»";
+  strCmd = " " + brightRed(cmd);
   if (code != null) {
     strExit = " «exit status " + yellow(code) + "»";
   }
-  str = join('', compact(array("Couldn't execute cmd", strCmd, strExit, strSig)));
+  if (nodeErr && !quietNodeErr) {
+    strNodeErr = " «" + nodeErr + "»";
+  }
+  str = join('', compact(array("Couldn't execute cmd", strCmd, strExit, strSig, strNodeErr)));
   if (die) {
     error(str);
     process.exit(code);
@@ -494,8 +643,9 @@ function syserror(arg$){
       ok: false,
       code: code,
       signal: signal,
-      out: out,
-      err: err
+      out: stdout,
+      stdout: stdout,
+      stderr: stderr
     });
   }
 }
@@ -607,7 +757,7 @@ function sysProcessArgs(){
   x$.type = type;
   return x$;
 }
-function outputToScalarOrList(output, doSplit){
+function outputToScalarOrList(output, doSplit, splitRemoveTrailingElement){
   if (isBuffer(output)) {
     output = output.toString();
   }
@@ -616,6 +766,11 @@ function outputToScalarOrList(output, doSplit){
       doSplit = '\n';
     }
     output = output.split(RegExp('' + doSplit));
+    if (splitRemoveTrailingElement) {
+      if ('' === last(output)) {
+        output.pop();
+      }
+    }
   }
   return output;
 }
