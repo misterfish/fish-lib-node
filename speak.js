@@ -4,6 +4,8 @@ out$.bulletGet = bulletGet;
 out$.bullet = bullet;
 out$.log = log;
 out$.info = info;
+out$.disableColors = disableColors;
+out$.forceColors = forceColors;
 out$.green = green;
 out$.brightGreen = brightGreen;
 out$.blue = blue;
@@ -40,10 +42,20 @@ our = {
     str: void 8,
     indent: 0,
     spacing: 1
+  },
+  colors: {
+    disable: false,
+    force: false
   }
 };
 function color(col, s){
   var str, opt;
+  if (our.colors.disable) {
+    return s;
+  }
+  if (!isTty() && !our.colors.force) {
+    return s;
+  }
   if (toString$.call(s).slice(8, -1) === 'Array') {
     str = s[0], opt = s[1];
   } else {
@@ -84,17 +96,11 @@ function _color(c, arg$){
   }
   return '[' + col + 'm';
 }
-/**
- * @private
- */
 function log(){
   var msg;
   msg = slice$.call(arguments);
   return console.log.apply(console, msg);
 }
-/**
- * Return our.bullet.str if it's been set, otherwise a random bullet.
- */
 function bullet(){
   var that;
   if ((that = our.bullet.str) != null) {
@@ -178,6 +184,15 @@ function magenta(){
 }
 function brightMagenta(){
   return colored('bright-magenta').apply(this, arguments);
+}
+function disableColors(){
+  return our.colors.disable = true;
+}
+function forceColors(){
+  return our.colors.force = true;
+}
+function isTty(){
+  return process.stdout.isTTY;
 }
 function repeatString$(str, n){
   for (var r = ''; n > 0; (n >>= 1) && (str += str)) if (n & 1) r += str;

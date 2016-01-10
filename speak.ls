@@ -6,6 +6,9 @@ export
     log
     info
 
+    disable-colors
+    force-colors
+
     green
     bright-green
     blue
@@ -39,13 +42,25 @@ config =
 
 our =
     bullet:
-        vals: void # values of config.bullets
-        str: void # the bullet
-        indent: 0 # before the bullet
-        spacing: 1 # between the bullet and the text
+        # --- values of config.bullets.
+        vals: void
+        # --- the bullet.
+        str: void
+        # --- before the bullet.
+        indent: 0
+        # --- between the bullet and the text.
+        spacing: 1
+    colors:
+        disable: false
+        force: false
 
-# Must take exactly 2 args (for fancy currying to work right).
+# --- must take exactly 2 args (for fancy currying to work right).
 function color col, s
+    if our.colors.disable
+        return s
+    if not is-tty() and not our.colors.force
+        return s
+
     if typeof! s is 'Array'
         [str, opt] = s
     else
@@ -60,7 +75,7 @@ function colored the-color
     (curry color) the-color
 
 function _color c, { warn-on-error } = {}
-    # set warn-on-error to false to avoid infinite loop if calling from
+    # --- set warn-on-error to false to avoid infinite loop if calling from
     # within iwarn.
     warn-on-error ?= true
     col = {
@@ -85,17 +100,10 @@ function _color c, { warn-on-error } = {}
 
     '[' + col + 'm'
 
-
-/**
- * @private
- */
-
 function log ...msg
     console.log.apply console, msg
 
-/**
- * Return our.bullet.str if it's been set, otherwise a random bullet.
- */
+# --- return our.bullet.str if it's been set, otherwise a random bullet.
 function bullet
     return that if our.bullet.str?
     our.bullet.vals := values config.bullets unless our.bullet.vals?
@@ -163,3 +171,13 @@ function magenta
 
 function bright-magenta
     (colored 'bright-magenta') ...
+
+function disable-colors
+    our.colors.disable = true
+
+function force-colors
+    our.colors.force = true
+
+# --- @private
+function is-tty
+    process.stdout.isTTY
