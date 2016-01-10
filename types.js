@@ -1,54 +1,61 @@
 var out$ = typeof exports != 'undefined' && exports || this, toString$ = {}.toString;
 out$.ofNumber = ofNumber;
-out$.ofString = ofString;
 out$.ofObject = ofObject;
-out$.ofBoolean = ofBoolean;
-out$.ofArray = ofArray;
 out$.okNumber = okNumber;
-out$.isNumber = isNumber;
+out$.isArray = isArray;
 out$.isObject = isObject;
 out$.isString = isString;
+out$.isBoolean = isBoolean;
+out$.isFunction = isFunction;
+out$.isInteger = isInteger;
+out$.isIntegerStrict = isIntegerStrict;
+out$.isNumber = isNumber;
+out$.isNumberStrict = isNumberStrict;
+out$.isIntegerPositive = isIntegerPositive;
+out$.isIntegerNonNegative = isIntegerNonNegative;
+out$.isBuffer = isBuffer;
+out$.ofNum = ofNum;
+out$.ofObj = ofObj;
+out$.okNum = okNum;
+out$.isArr = isArr;
+out$.isObj = isObj;
 out$.isStr = isStr;
 out$.isBool = isBool;
-out$.isBoolean = isBoolean;
-out$.isObj = isObj;
 out$.isFunc = isFunc;
-out$.isFunction = isFunction;
-out$.isArr = isArr;
-out$.isArray = isArray;
-out$.isNum = isNum;
-out$.isNumber = isNumber;
 out$.isInt = isInt;
-out$.isInteger = isInteger;
-out$.isPositiveInt = isPositiveInt;
-out$.isNonNegativeInt = isNonNegativeInt;
-out$.isBuffer = isBuffer;
+out$.isIntStrict = isIntStrict;
+out$.isNum = isNum;
+out$.isNumStrict = isNumStrict;
+out$.isIntPos = isIntPos;
+out$.isIntNonNeg = isIntNonNeg;
+out$.isBuf = isBuf;
 function ofNumber(it){
   return toString$.call(it).slice(8, -1) === 'Number';
-}
-function ofString(it){
-  return toString$.call(it).slice(8, -1) === 'String';
 }
 function ofObject(it){
   return typeof it === 'object';
 }
-function ofBoolean(it){
-  return toString$.call(it).slice(8, -1) === 'Boolean';
-}
-function ofArray(it){
-  return toString$.call(it).slice(8, -1) === 'Array';
-}
 function okNumber(it){
-  var nan, infinity, ofNum;
+  var nan, infinity, isOfNum;
   nan = isNaN(it);
   infinity = it === Infinity;
-  ofNum = ofNumber(it);
+  isOfNum = ofNumber(it);
   return {
     nan: nan,
     infinity: infinity,
-    ofNum: ofNum,
+    isOfNum: isOfNum,
     ok: ofNum && !nan && !infinity
   };
+}
+function isNumber(it){
+  return isNumberPriv(it, {
+    strict: false
+  });
+}
+function isNumberStrict(it){
+  return isNumberPriv(it, {
+    strict: true
+  });
 }
 function isObject(it){
   return toString$.call(it).slice(8, -1) === 'Object';
@@ -56,17 +63,67 @@ function isObject(it){
 function isString(it){
   return toString$.call(it).slice(8, -1) === 'String';
 }
+function isBoolean(it){
+  return toString$.call(it).slice(8, -1) === 'Boolean';
+}
+function isFunction(it){
+  return toString$.call(it).slice(8, -1) === 'Function';
+}
+function isArray(it){
+  return toString$.call(it).slice(8, -1) === 'Array';
+}
+function isInteger(it){
+  return isIntegerPriv(it, {
+    strict: false
+  });
+}
+function isIntegerStrict(it){
+  return isIntegerPriv(it, {
+    strict: true
+  });
+}
+function isIntegerPositive(it){
+  return isInt(it) && it > 0;
+}
+function isIntegerNonNegative(it){
+  return isInt(it) && it >= 0;
+}
+function isBuffer(){
+  return Buffer.isBuffer.apply(this, arguments);
+}
+function isNumberPriv(n, arg$){
+  var strict;
+  strict = (arg$ != null
+    ? arg$
+    : {}).strict;
+  if (isString(n)) {
+    if (strict) {
+      return false;
+    } else {
+      n = +n;
+    }
+  }
+  return okNumber(n).ok;
+}
+function isIntegerPriv(n, arg$){
+  var strict;
+  strict = (arg$ != null
+    ? arg$
+    : {}).strict;
+  if (isString(n)) {
+    if (strict) {
+      return false;
+    } else {
+      n = +n;
+    }
+  }
+  return okNumber(n).ok && n === Math.floor(n);
+}
 function ofNum(){
   return ofNumber.apply(this, arguments);
 }
-function ofStr(){
-  return ofString.apply(this, arguments);
-}
 function ofObj(){
   return ofObject.apply(this, arguments);
-}
-function ofBool(){
-  return ofBoolean.apply(this, arguments);
 }
 function okNum(){
   return okNumber.apply(this, arguments);
@@ -77,67 +134,27 @@ function isNum(){
 function isObj(){
   return isObject.apply(this, arguments);
 }
-function isStr(it){
-  return isString(it);
+function isStr(){
+  return isString.apply(this, arguments);
 }
-function isBool(it){
-  return isBoolean(it);
+function isBool(){
+  return isBoolean.apply(this, arguments);
 }
-function isBoolean(it){
-  return toString$.call(it).slice(8, -1) === 'Boolean';
+function isFunc(){
+  return isFunction.apply(this, arguments);
 }
-function isFunc(it){
-  return isFunction(it);
+function isArr(){
+  return isArray.apply(this, arguments);
 }
-function isFunction(it){
-  return toString$.call(it).slice(8, -1) === 'Function';
+function isInt(){
+  return isInteger.apply(this, arguments);
 }
-function isArr(it){
-  return isArray(it);
+function isBuf(){
+  return isBuffer.apply(this, arguments);
 }
-function isArray(){
-  return ofArray.apply(this, arguments);
+function isIntPos(){
+  return isIntegerPositive.apply(this, arguments);
 }
-/*
- * Checks the type of the argument, in the same way as is-str, is-arr, etc.
- * Use is-a-number to test strings such as '3.1'.
- *
- * If it's a Number, returns an object with property 'nan' (alias 'is-nan')
- * based on whether it's NaN (not a number).
- * 
- * Returns false otherwise.
- */
-function isNumber(it){
-  return isNumberPriv(it, {
-    strict: false
-  });
-}
-function isNumberPriv(n, arg$){
-  var strict;
-  strict = (arg$ != null
-    ? arg$
-    : {}).strict;
-  if (ofString(n)) {
-    if (strict) {
-      return false;
-    } else {
-      n = +n;
-    }
-  }
-  return okNumber(n).ok;
-}
-function isInt(it){
-  return isInteger(it);
-}
-function isInteger(it){
-  return isNum(it) && it === Math.floor(it);
-}
-function isPositiveInt(it){
-  return isInt(it) && it > 0;
-}
-function isNonNegativeInt(it){
-  return isInt(it) && it >= 0;
-}
-function isBuffer(){
-  return Buffer.isBuffer.apply(this, arguments);
+function isIntNonNeg(){
+  return isIntegerNonNegative.apply(this, arguments);
 }

@@ -1,10 +1,6 @@
-# --- of-xxx() functions check the value of JS's typeof for native types and
-# Array to see if the input is of that type.
+# --- of-number() and of-object() check the value of JS's typeof.
 #
-# Array is added as a special case because people expect it to work this
-# way.
-#
-# for string, boolean, and Array, of-xxx() is identical to is-xxx().
+# for all other types, just use is-xxx().
 #
 # for number and object, is-xxx() functions provide stronger checks than
 # just 'typeof', because 'object' and 'number' contain their own negations
@@ -42,7 +38,7 @@ export
     is-integer-non-negative
     is-buffer
 
-
+    # --- aliases
     of-num
     of-obj
 
@@ -60,9 +56,6 @@ export
     is-int-pos
     is-int-non-neg
     is-buf
-
-
-#
 
 # ------ checks if the input is of type 'number'.
 #
@@ -173,7 +166,6 @@ function is-integer-priv n, { strict } = {}
             n = +n
 
     ok-number n .ok and (n == Math.floor n)
-}
 
 # --- aliases
 
