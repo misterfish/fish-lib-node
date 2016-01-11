@@ -1,11 +1,11 @@
 {
-  "name": "fish-lib-ls",
+  "name": "fish-lib",
   "version": "0.1.4",
   "description": "Useful stuff for writing in LiveScript",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "http://github.com/misterfish/fish-lib-ls.git"
+    "url": "http://github.com/misterfish/fish-lib-node.git"
   },
   "author": {
     "name": "Allen Haim",
