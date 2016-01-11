@@ -273,6 +273,10 @@ function sys-set opts
         target: our.opts
         name: 'sys'
 
+function sys-get key
+    return complain 'No such key' bright-red key unless our.opts.has-own-property key
+    our.opts[key]
+
 # --- quote shell metacharacters in the most simple way possible: replace
 # every single quote (sq) with: sq + backslash + sq + sq, then surround the
 # whole thing with sqs.

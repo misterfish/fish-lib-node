@@ -53,6 +53,12 @@ function sysSet(opts){
     name: 'sys'
   });
 }
+function sysGet(key){
+  if (!our.opts.hasOwnProperty(key)) {
+    return complain('No such key', brightRed(key));
+  }
+  return our.opts[key];
+}
 function shellQuote(arg){
   if (/[!$&*?()`<>|\s]/.exec(arg)) {
     arg = arg.replace(/'/g, "'\\''");
