@@ -176,6 +176,7 @@
 
 export
     init
+    sys-get
     sys-set
     sys-ok
     sys-exec

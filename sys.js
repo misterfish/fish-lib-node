@@ -1,5 +1,6 @@
 var childProcess, ref$, last, keys, join, map, each, compact, main, isBuffer, isString, isFunc, isObj, isArr, isStr, aerror, iwarn, warn, error, log, bullet, array, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
 out$.init = init;
+out$.sysGet = sysGet;
 out$.sysSet = sysSet;
 out$.sysOk = sysOk;
 out$.sysExec = sysExec;
