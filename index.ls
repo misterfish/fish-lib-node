@@ -10,7 +10,7 @@ sprintf = require 'sprintf'
 { sys-get, sys-set, sys-ok, sys-exec, sys-spawn, sys, shell-quote, } = sys-mod = require './sys'
 { bullet, bullet-set, bullet-get, log, info, green, bright-green, blue, bright-blue, red, bright-red, yellow, bright-yellow, cyan, bright-cyan, magenta, bright-magenta, disable-colors, force-colors, } = speak = require './speak'
 
-{ err-set, icomplain, complain, iwarn, ierror, warn, error, aerror, } = squeak = require './squeak'
+{ squeak-set, squeak-get, icomplain, complain, iwarn, ierror, warn, error, aerror, } = squeak = require './squeak'
 
 { of-number, of-object, ok-number, is-array, is-object, is-string, is-boolean, is-function, is-integer, is-integer-strict, is-number, is-number-strict, is-integer-positive, is-integer-non-negative, is-buffer, of-num, of-obj, ok-num, is-arr, is-obj, is-str, is-bool, is-func, is-int, is-int-strict, is-num, is-num-strict, is-int-pos, is-int-non-neg, is-buf, } = types = require './types'
 
@@ -79,7 +79,7 @@ Identifier.speak = {
 }
 
 Identifier.squeak = {
-    icomplain, complain, iwarn, ierror, warn, error, aerror, err-set,
+    icomplain, complain, iwarn, ierror, warn, error, aerror, squeak-set, squeak-get,
 }
 
 Identifier.color = {

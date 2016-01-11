@@ -1,6 +1,6 @@
 export
     init
-    err-set
+    squeak-set
     icomplain
     complain
     iwarn
@@ -170,11 +170,15 @@ function init { pkg = {}, } = {}
     # --- clone args; noop if []
     our.pkg <<< pkg
 
-function err-set opts
+function squeak-set opts
     our.pkg.conf-set do
         source: opts
         target: our.opts
         name: 'err'
+
+function squeak-get key
+    return complain 'No such key' bright-red key unless our.opts.has-own-property key
+    our.opts[key]
 
 # --- all error and warn functions route through this underlying one.
 #

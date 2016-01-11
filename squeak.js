@@ -1,6 +1,6 @@
 var ref$, last, join, map, main, isObj, isArr, bullet, bulletGet, green, brightRed, yellow, red, array, util, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
 out$.init = init;
-out$.errSet = errSet;
+out$.squeakSet = squeakSet;
 out$.icomplain = icomplain;
 out$.complain = complain;
 out$.iwarn = iwarn;
@@ -118,12 +118,18 @@ function init(arg$){
     : {};
   return import$(our.pkg, pkg);
 }
-function errSet(opts){
+function squeakSet(opts){
   return our.pkg.confSet({
     source: opts,
     target: our.opts,
     name: 'err'
   });
+}
+function squeakGet(key){
+  if (!our.opts.hasOwnProperty(key)) {
+    return complain('No such key', brightRed(key));
+  }
+  return our.opts[key];
 }
 function pcomplain(arg$){
   var msg, type, internal, printStackTrace, code, stackRewind, ref$, printStackTraceOpt, printFileAndLine, error, allow, throws, that, bulletColor, stack, funcname, filename, lineNum, msgStr;
