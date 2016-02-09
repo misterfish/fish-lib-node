@@ -131,13 +131,21 @@ function squeakGet(key){
   }
   return our.opts[key];
 }
-function pcomplain(arg$){
-  var msg, type, internal, printStackTrace, code, stackRewind, ref$, printStackTraceOpt, printFileAndLine, error, allow, throws, that, bulletColor, stack, funcname, filename, lineNum, msgStr;
-  msg = arg$.msg, type = arg$.type, internal = arg$.internal, printStackTrace = arg$.printStackTrace, code = arg$.code, stackRewind = (ref$ = arg$.stackRewind) != null ? ref$ : 0;
+function pcomplain(opts){
+  var msg, type, internal, code, stackRewind, ref$, errorType, apiErrorType, printStackTraceOpt, msgBegin, msgMain, msgEnd, printFileAndLine, printStackTrace, allow, throws, that, bulletColor, stack, funcname, filename, lineNum, msgBeginStr, msgMainStr, msgEndStr, msgStr;
+  msg = opts.msg, type = opts.type, internal = opts.internal, code = opts.code, stackRewind = (ref$ = opts.stackRewind) != null ? ref$ : 0;
+  errorType = (ref$ = opts.error) != null
+    ? ref$
+    : our.opts.error;
+  apiErrorType = (ref$ = opts.apiError) != null
+    ? ref$
+    : our.opts.apiError;
+  printStackTraceOpt = (ref$ = opts.printStackTrace) != null
+    ? ref$
+    : our.opts.printStackTrace;
   if (!util) {
     util = require('util');
   }
-  printStackTraceOpt = printStackTrace;
   if (!isArr(msg)) {
     return iwarn('bad param msg');
   }
@@ -148,58 +156,57 @@ function pcomplain(arg$){
       return it;
     }
   }, msg);
+  msgBegin = [];
+  msgMain = msg;
+  msgEnd = [];
   printFileAndLine = false;
   if (type === 'aerror') {
-    if (!msg.length) {
-      msg.push("bad call.");
+    if (!msgMain.length) {
+      msgMain.push("bad call.");
     }
-    msg.unshift("Api error:");
-    error = true;
+    msgBegin.push("Api error:");
     printFileAndLine = true;
     printStackTrace = true;
-    allow = our.opts.apiError === 'allow';
-    throws = our.opts.apiError === 'throw';
+    allow = apiErrorType === 'allow';
+    throws = apiErrorType === 'throw';
   } else if (type === 'ierror') {
-    if (!msg.length) {
-      msg.push("something's wrong.");
+    if (!msgMain.length) {
+      msgMain.push("something's wrong.");
     }
-    msg.unshift("Internal error:");
+    msgBegin.push("Internal error:");
     printFileAndLine = true;
     printStackTrace = true;
-    allow = our.opts.error === 'allow';
-    throws = our.opts.error === 'throw';
+    allow = errorType === 'allow';
+    throws = errorType === 'throw';
   } else if (type === 'iwarn') {
-    if (!msg.length) {
-      msg.push("something's wrong.");
+    if (!msgMain.length) {
+      msgMain.push("something's wrong.");
     }
-    msg.unshift("Internal warning:");
+    msgBegin.push("Internal warning:");
     printFileAndLine = true;
     printStackTrace = true;
     allow = true;
     throws = false;
   } else if (type === 'error') {
-    if (!msg.length) {
-      msg.push("something's wrong.");
+    if (!msgMain.length) {
+      msgMain.push("something's wrong.");
     }
-    msg.unshift("Error:");
+    msgBegin.push("Error:");
     printFileAndLine = false;
     printStackTrace = false;
-    allow = our.opts.error === 'allow';
-    throws = our.opts.error === 'throw';
+    allow = errorType === 'allow';
+    throws = errorType === 'throw';
   } else if (type === 'warn') {
-    if (!msg.length) {
-      msg.push("something's wrong.");
+    if (!msgMain.length) {
+      msgMain.push("something's wrong.");
     }
-    msg.unshift("Warning:");
+    msgBegin.push("Warning:");
     printFileAndLine = false;
     printStackTrace = false;
     allow = true;
     throws = false;
   }
   if ((that = printStackTraceOpt) != null) {
-    printStackTrace = that;
-  }
-  if ((that = our.opts.printStackTrace) != null) {
     printStackTrace = that;
   }
   if (throws) {
@@ -219,7 +226,7 @@ function pcomplain(arg$){
   if (printStackTrace || printFileAndLine) {
     ref$ = getStack(stackRewind), stack = ref$[0], funcname = ref$[1], filename = ref$[2], lineNum = ref$[3];
   }
-  msg[0] = function(){
+  msgBegin.unshift(function(){
     var ind, spa, bul;
     ind = repeatString$(' ', bulletGet('indent'));
     spa = repeatString$(' ', bulletGet('spacing'));
@@ -228,10 +235,10 @@ function pcomplain(arg$){
         warnOnError: false
       }
     ]);
-    return ind + bul + spa + msg[0];
-  }();
+    return ind + bul + spa;
+  }());
   if (printFileAndLine) {
-    msg.push("(" + (yellow([
+    msgEnd.push("(" + (yellow([
       filename, {
         warnOnError: false
       }
@@ -252,19 +259,22 @@ function pcomplain(arg$){
     ]) + "") + ")");
   }
   if (printStackTrace) {
-    msg.push("\n");
+    msgEnd.push("\n");
     if (typeof m != 'undefined' && m !== null) {
-      msg.push(m[2]);
+      msgEnd.push(m[2]);
     } else {
-      msg.push(stack);
+      msgEnd.push(stack);
     }
   }
-  msg.push("\n");
-  msgStr = join(' ', msg);
+  msgEnd.push("\n");
+  msgBeginStr = join('', msgBegin);
+  msgMainStr = join(' ', msgMain);
+  msgEndStr = join(' ', msgEnd);
+  msgStr = join(' ', array(msgBeginStr, msgMainStr, msgEndStr));
   if (throws) {
-    throw new Error(msgStr);
+    throw new Error(msgMainStr);
   }
-  process.stderr.write(join(' ', msg));
+  process.stderr.write(msgStr);
   if (!allow) {
     code == null && (code = 1);
     process.exit(code);
