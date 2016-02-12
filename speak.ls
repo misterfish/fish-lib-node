@@ -55,17 +55,20 @@ our =
         force: false
 
 # --- must take exactly 2 args (for fancy currying to work right).
+#
+# so s might be an array.
 function color col, s
-    if our.colors.disable
-        return s
-    if not is-tty() and not our.colors.force
-        return s
-
     if typeof! s is 'Array'
         [str, opt] = s
     else
         str = s
         opt = {}
+
+    if our.colors.disable
+        return str
+    if not is-tty() and not our.colors.force
+        return str
+
     join '' array do
         _color col, opt
         str

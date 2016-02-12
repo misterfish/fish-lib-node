@@ -1,4 +1,4 @@
-var ref$, last, join, map, main, isObj, isArr, bullet, bulletGet, green, brightRed, yellow, red, array, util, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
+var ref$, last, join, map, isObj, isArr, bullet, bulletGet, green, brightRed, yellow, red, array, util, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
 out$.init = init;
 out$.squeakSet = squeakSet;
 out$.icomplain = icomplain;
@@ -9,8 +9,6 @@ out$.warn = warn;
 out$.error = error;
 out$.aerror = aerror;
 ref$ = require("prelude-ls"), last = ref$.last, join = ref$.join, map = ref$.map;
-main = require.main;
-main.exports;
 ref$ = require('./types'), isObj = ref$.isObj, isArr = ref$.isArr;
 ref$ = require('./speak'), bullet = ref$.bullet, bulletGet = ref$.bulletGet, green = ref$.green, brightRed = ref$.brightRed, yellow = ref$.yellow, red = ref$.red;
 array = require('./util').array;
@@ -134,8 +132,22 @@ function squeakGet(key){
 function pcomplain(arg$){
   var msg, type, internal, printStackTrace, code, stackRewind, ref$, printStackTraceOpt, printFileAndLine, error, allow, throws, that, bulletColor, stack, funcname, filename, lineNum, msgStr;
   msg = arg$.msg, type = arg$.type, internal = arg$.internal, printStackTrace = arg$.printStackTrace, code = arg$.code, stackRewind = (ref$ = arg$.stackRewind) != null ? ref$ : 0;
-  if (!util) {
-    util = require('util');
+  if (!isPhantom()) {
+    if (!util) {
+      util = require('util');
+    }
+  } else {
+    util = {
+      inspect: function(){
+        return toArray(arguments).map(function(it){
+          if (it.toString != null) {
+            return it.toString();
+          } else {
+            return it;
+          }
+        }).join(' ');
+      }
+    };
   }
   printStackTraceOpt = printStackTrace;
   if (!isArr(msg)) {
@@ -220,7 +232,7 @@ function pcomplain(arg$){
     ref$ = getStack(stackRewind), stack = ref$[0], funcname = ref$[1], filename = ref$[2], lineNum = ref$[3];
   }
   msg[0] = function(){
-    var ind, spa, bul;
+    var ind, spa, bul, msg0;
     ind = repeatString$(' ', bulletGet('indent'));
     spa = repeatString$(' ', bulletGet('spacing'));
     bul = bulletColor([
@@ -228,7 +240,10 @@ function pcomplain(arg$){
         warnOnError: false
       }
     ]);
-    return ind + bul + spa + msg[0];
+    msg0 = isObj(msg[0])
+      ? util.inspect(msg[0])
+      : msg[0];
+    return ind + bul + spa + msg0;
   }();
   if (printFileAndLine) {
     msg.push("(" + (yellow([
@@ -290,6 +305,11 @@ function getStack(stackRewind){
     }
   }(), funcname = ref$[0], filename = ref$[1], lineNum = ref$[2];
   return [stack, funcname, filename, lineNum];
+}
+function isPhantom(){
+  if ((typeof window != 'undefined' && window !== null) && window.callPhantom && window._phantom) {
+    return true;
+  }
 }
 function import$(obj, src){
   var own = {}.hasOwnProperty;

@@ -11,9 +11,8 @@ export
 
 { last, join, map, } = require "prelude-ls"
 
-main = require.main
-
-{ } = main.exports
+#main = require.main
+#{ } = main.exports
 
 { is-obj, is-arr, } = require './types'
 { bullet, bullet-get, green, bright-red, yellow, red, } = require './speak'
@@ -185,7 +184,19 @@ function squeak-get key
 # @private
 
 function pcomplain { msg, type, internal, print-stack-trace, code, stack-rewind = 0 }
-    util := require 'util' unless util
+    if not is-phantom()
+        util := require 'util' unless util
+    else
+        util :=
+            # just a simple inspector
+            inspect: ->
+                to-array arguments
+                    .map ->
+                        if it.to-string?
+                            it.to-string()
+                        else
+                            it
+                    .join ' '
 
     print-stack-trace-opt = print-stack-trace
 
@@ -257,7 +268,9 @@ function pcomplain { msg, type, internal, print-stack-trace, code, stack-rewind 
         # --- -warn-on-error to avoid infinite loop.
         bul = bullet-color [bullet!, {-warn-on-error}]
 
-        ind + bul + spa + msg.0
+        msg0 = if is-obj msg.0 then util.inspect msg.0 else msg.0
+
+        ind + bul + spa + msg0
 
     # --- (file:line)
     if print-file-and-line
@@ -325,3 +338,5 @@ function get-stack stack-rewind
 
     [stack, funcname, filename, line-num]
 
+function is-phantom
+    true if window? and window.call-phantom and window._phantom

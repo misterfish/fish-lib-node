@@ -7,8 +7,9 @@ export
     times
     array
     to-array
+    flat-array
 
-{ is-positive-int, is-int, is-num, is-str, } = require './types'
+{ is-positive-int, is-int, is-num, is-str, is-func, } = require './types'
 { aerror, warn, } = require './squeak'
 { green, bright-red, } = require './speak'
 
@@ -43,11 +44,20 @@ function chr
     String.from-char-code it
 
 # --- step by +1 or -1 to get from a to b, inclusive.
+#
+# if func is given, call it for each step with the value as argument,
+#
+# if not, return an array.
+
 function range a, b, func
     return aerror() unless is-int a and is-int b
+    return aerror 'bad function' if func and not is-func func
 
-    for i from a to b
-        func i
+    if func
+        for i from a to b
+            func i
+    else
+        [a to b]
 
 # --- call the function n times, and pass it the counter idx as its arg.
 #
@@ -65,3 +75,32 @@ function array
 function to-array
     [.. for &.0]
 
+# --- call like:
+#
+# flat-array do
+#   1
+#   [1 2]
+#   [1 [2 3]]
+#
+# (returns [1 1 2 1 2 3])
+# 
+# A single array arg is just a special case:
+#
+# flat-array [1 [2 [3 4]]]
+
+function flat-array ...vals
+    ret = []
+    recursing = false
+    vals.for-each ->
+        if is-array it
+            recursing := true
+            v = it
+        else
+            v = [it]
+        v.for-each ->
+            #ret.push flat-array it
+            ret.push it
+    if recursing
+        flat-array.apply null ret
+    else
+        ret

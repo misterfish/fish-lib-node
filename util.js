@@ -1,4 +1,4 @@
-var ref$, isPositiveInt, isInt, isNum, isStr, aerror, warn, green, brightRed, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
+var ref$, isPositiveInt, isInt, isNum, isStr, isFunc, aerror, warn, green, brightRed, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
 out$.shuffleArray = shuffleArray;
 out$.mergeObjects = mergeObjects;
 out$.ord = ord;
@@ -7,7 +7,8 @@ out$.range = range;
 out$.times = times;
 out$.array = array;
 out$.toArray = toArray;
-ref$ = require('./types'), isPositiveInt = ref$.isPositiveInt, isInt = ref$.isInt, isNum = ref$.isNum, isStr = ref$.isStr;
+out$.flatArray = flatArray;
+ref$ = require('./types'), isPositiveInt = ref$.isPositiveInt, isInt = ref$.isInt, isNum = ref$.isNum, isStr = ref$.isStr, isFunc = ref$.isFunc;
 ref$ = require('./squeak'), aerror = ref$.aerror, warn = ref$.warn;
 ref$ = require('./speak'), green = ref$.green, brightRed = ref$.brightRed;
 function shuffleArray(input){
@@ -58,15 +59,25 @@ function chr(it){
   return String.fromCharCode(it);
 }
 function range(a, b, func){
-  var i$, i, results$ = [];
+  var i$, i, results$ = [], results1$ = [];
   if (!(isInt(a) && isInt(b))) {
     return aerror();
   }
-  for (i$ = a; i$ <= b; ++i$) {
-    i = i$;
-    results$.push(func(i));
+  if (func && !isFunc(func)) {
+    return aerror('bad function');
   }
-  return results$;
+  if (func) {
+    for (i$ = a; i$ <= b; ++i$) {
+      i = i$;
+      results$.push(func(i));
+    }
+    return results$;
+  } else {
+    for (i$ = a; i$ <= b; ++i$) {
+      results1$.push(i$);
+    }
+    return results1$;
+  }
 }
 function times(n, func){
   var i$, i, results$ = [];
@@ -94,4 +105,27 @@ function toArray(){
     results$.push(x$);
   }
   return results$;
+}
+function flatArray(){
+  var vals, ret, recursing;
+  vals = slice$.call(arguments);
+  ret = [];
+  recursing = false;
+  vals.forEach(function(it){
+    var v;
+    if (isArray(it)) {
+      recursing = true;
+      v = it;
+    } else {
+      v = [it];
+    }
+    return v.forEach(function(it){
+      return ret.push(it);
+    });
+  });
+  if (recursing) {
+    return flatArray.apply(null, ret);
+  } else {
+    return ret;
+  }
 }

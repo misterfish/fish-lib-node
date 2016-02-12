@@ -14,9 +14,10 @@ sprintf = require 'sprintf'
 
 { of-number, of-object, ok-number, is-array, is-object, is-string, is-boolean, is-function, is-integer, is-integer-strict, is-number, is-number-strict, is-integer-positive, is-integer-non-negative, is-buffer, of-num, of-obj, ok-num, is-arr, is-obj, is-str, is-bool, is-func, is-int, is-int-strict, is-num, is-num-strict, is-int-pos, is-int-non-neg, is-buf, } = types = require './types'
 
-{ shuffle-array, merge-objects, ord, chr, range, times, array, to-array, } = util = require './util'
+{ shuffle-array, merge-objects, ord, chr, range, times, array, to-array, flat-array, } = util = require './util'
 
-{ getopt, } = opt = require './opt'
+if not is-phantom()
+    { getopt, } = opt = require './opt'
 
 config =
     # --- functions which our sister modules in this package might need from
@@ -98,7 +99,7 @@ Identifier.sys = {
 }
 
 Identifier.util = {
-    shuffle-array, merge-objects, ord, chr, range, times, array, to-array,
+    shuffle-array, merge-objects, ord, chr, range, times, array, to-array, flat-array,
 }
 
 <[ main speak squeak color util types sys ]> .for-each ->
@@ -107,3 +108,6 @@ Identifier.util = {
 for k, v of Identifier.all
     module.exports[k] = v
 
+# --- try to determine whether we are running under phantomjs.
+function is-phantom
+    true if window? and window.call-phantom and window._phantom

@@ -50,17 +50,17 @@ our = {
 };
 function color(col, s){
   var str, opt;
-  if (our.colors.disable) {
-    return s;
-  }
-  if (!isTty() && !our.colors.force) {
-    return s;
-  }
   if (toString$.call(s).slice(8, -1) === 'Array') {
     str = s[0], opt = s[1];
   } else {
     str = s;
     opt = {};
+  }
+  if (our.colors.disable) {
+    return str;
+  }
+  if (!isTty() && !our.colors.force) {
+    return str;
   }
   return join('', array(_color(col, opt), str, _color('reset', opt)));
 }

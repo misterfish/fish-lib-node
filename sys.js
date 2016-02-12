@@ -1,4 +1,4 @@
-var childProcess, ref$, last, keys, join, map, each, compact, main, isBuffer, isString, isFunc, isObj, isArr, isStr, aerror, iwarn, warn, error, log, bullet, array, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
+var childProcess, ref$, last, keys, join, map, each, compact, isBuffer, isString, isFunc, isObj, isArr, isStr, aerror, iwarn, warn, error, log, bullet, array, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
 out$.init = init;
 out$.sysGet = sysGet;
 out$.sysSet = sysSet;
@@ -9,8 +9,6 @@ out$.sys = sys;
 out$.shellQuote = shellQuote;
 childProcess = require('child_process');
 ref$ = require("prelude-ls"), last = ref$.last, keys = ref$.keys, join = ref$.join, map = ref$.map, each = ref$.each, compact = ref$.compact;
-main = require.main;
-main.exports;
 ref$ = require('./types'), isBuffer = ref$.isBuffer, isString = ref$.isString, isFunc = ref$.isFunc, isObj = ref$.isObj, isArr = ref$.isArr, isStr = ref$.isStr;
 ref$ = require('./squeak'), aerror = ref$.aerror, iwarn = ref$.iwarn, warn = ref$.warn, error = ref$.error;
 ref$ = require('./speak'), log = ref$.log, bullet = ref$.bullet;
@@ -256,7 +254,7 @@ function sysdoExecSync(opts){
   return ret;
 }
 function sysdoExecAsync(opts){
-  var cmd, oncomplete, args, ref$, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, onChild, child, complain;
+  var cmd, oncomplete, args, ref$, die, verbose, quiet, quietOnExit, quietNodeErr, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, onChild, child;
   cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
     : [], die = (ref$ = opts.die) != null
@@ -267,7 +265,9 @@ function sysdoExecAsync(opts){
     ? ref$
     : our.opts.quiet, quietOnExit = (ref$ = opts.quietOnExit) != null
     ? ref$
-    : our.opts.quietOnExit, sync = (ref$ = opts.sync) != null
+    : our.opts.quietOnExit, quietNodeErr = (ref$ = opts.quietNodeErr) != null
+    ? ref$
+    : our.opts.quietNodeErr, sync = (ref$ = opts.sync) != null
     ? ref$
     : our.opts.sync, outPrint = (ref$ = opts.outPrint) != null
     ? ref$
@@ -284,7 +284,7 @@ function sysdoExecAsync(opts){
     : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
   onChild = function(err, stdout, stderr){
     var signal, code;
-    if (errPrint) {
+    if (errPrint && stderr != null) {
       console.warn(stderr);
     }
     if (outPrint) {
@@ -305,7 +305,7 @@ function sysdoExecAsync(opts){
         code: code,
         signal: signal,
         oncomplete: oncomplete,
-        err: err,
+        nodeErr: err.toString(),
         stdout: stdout,
         stderr: stderr,
         die: die,
@@ -325,18 +325,7 @@ function sysdoExecAsync(opts){
       });
     }
   };
-  child = childProcess.exec(cmd, invocationOpts, onChild);
-  if (child == null) {
-    if (!quiet) {
-      complain = die ? error : warn;
-      complain('Null return from child-process.exec()');
-    }
-    if (oncomplete != null) {
-      return oncomplete({
-        ok: false
-      });
-    }
-  }
+  return child = childProcess.exec(cmd, invocationOpts, onChild);
 }
 function sysdoSpawn(opts){
   var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, quietNodeErr, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, that;
@@ -482,7 +471,7 @@ function sysdoSpawnSync(opts){
   return ret;
 }
 function sysdoSpawnAsync(opts){
-  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, quietNodeErr, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, syserrorFired, streamData, spawned, streamConfigs, doSyserror;
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, quietNodeErr, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, syserrorFired, streamData, spawned, streamConfigs, doSyserror, doneEvent;
   cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
     : [], outIgnore = (ref$ = opts.outIgnore) != null
@@ -593,7 +582,8 @@ function sysdoSpawnAsync(opts){
       });
     }
   });
-  spawned.on('close', function(code, signal){
+  doneEvent = isPhantom() ? 'exit' : 'close';
+  spawned.on(doneEvent, function(code, signal){
     if (code !== 0) {
       if (!syserrorFired) {
         syserrorFired = true;
@@ -688,7 +678,6 @@ function sysProcessArgs(){
     opts.cmd = cmd;
     opts.args = args;
   } else if (numArgs === 3 && isArr(argsArray[1]) && isFunc(argsArray[2])) {
-    log('6');
     cmd = argsArray[0], args = argsArray[1], oncomplete = argsArray[2];
     opts = {
       cmd: cmd,
@@ -760,6 +749,14 @@ function sysProcessArgs(){
   } else {
     return aerror();
   }
+  if (opts.args) {
+    opts.args = compact(opts.args.map(function(it){
+      if (it == null) {
+        warn("Skipping null/undefined arg (check args array)");
+      }
+      return it;
+    }));
+  }
   x$ = opts;
   x$.type = type;
   return x$;
@@ -817,6 +814,11 @@ function handleStreamDataAsList(streamData, streamConfig, string){
   return split.forEach(function(it){
     return stream.push(it);
   });
+}
+function isPhantom(){
+  if ((typeof window != 'undefined' && window !== null) && window.callPhantom && window._phantom) {
+    return true;
+  }
 }
 function import$(obj, src){
   var own = {}.hasOwnProperty;

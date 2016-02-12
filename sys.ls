@@ -95,7 +95,7 @@
 #
 # ------ options (both exec and spawn):
 # 
-# if oncomplete is given or opt 'sync' is false, calls will be asynchronous.
+# if opt 'sync' is false, calls will be asynchronous.
 #
 # oncomplete is for both success and error, and is called as:
 #
@@ -188,9 +188,8 @@ child-process = require 'child_process'
 
 { last, keys, join, map, each, compact, } = require "prelude-ls"
 
-main = require.main
-
-{ } = main.exports
+#main = if is-phantom() then global.main else require.main
+#{ } = main.exports
 
 { is-buffer, is-string, is-func, is-obj, is-arr, is-str, } = require './types'
 { aerror, iwarn, warn, error, } = require './squeak'
@@ -504,6 +503,7 @@ function sysdo-exec-async opts
         verbose = our.opts.verbose,
         quiet = our.opts.quiet,
         quiet-on-exit = our.opts.quiet-on-exit,
+        quiet-node-err = our.opts.quiet-node-err,
         sync = our.opts.sync,
         out-print = our.opts.out-print,
         err-print = our.opts.err-print,
@@ -520,7 +520,7 @@ function sysdo-exec-async opts
     # flags.
 
     on-child = (err, stdout, stderr) ->
-        console.warn stderr if err-print
+        console.warn stderr if err-print and stderr?
         process.stdout.write stdout if out-print
 
         if err
@@ -535,7 +535,7 @@ function sysdo-exec-async opts
 
             # --- do some common error handling, then call oncomplete.
             return syserror do
-                { cmd, code, signal, oncomplete, err, stdout, stderr, die, quiet, quiet-on-exit, quiet-node-err, }
+                { cmd, code, signal, oncomplete, node-err: err.to-string(), stdout, stderr, die, quiet, quiet-on-exit, quiet-node-err, }
 
         stdout = output-to-scalar-or-list do
             stdout
@@ -552,11 +552,11 @@ function sysdo-exec-async opts
     child = child-process.exec cmd, invocation-opts, on-child
 
     # --- just in case we get null for some reason.
-    if not child?
-        if not quiet
-            complain = if die then error else warn
-            complain 'Null return from child-process.exec()'
-        oncomplete { ok: false, } if oncomplete?
+#    if not child?
+#        if not quiet
+#            complain = if die then error else warn
+#            complain 'Null return from child-process.exec()'
+#        oncomplete { ok: false, } if oncomplete?
 
 # | sysdo-exec-async
 
@@ -828,8 +828,11 @@ function sysdo-spawn-async opts
     # streams.
     #
     # we assume that they are not.
+    #
+    # phantomjs only has 'exit'.
 
-    spawned.on 'close', (code, signal) ->
+    done-event = if is-phantom() then 'exit' else 'close'
+    spawned.on done-event, (code, signal) ->
 
         # --- non-zero exit.
         if code is not 0
@@ -923,7 +926,6 @@ function sys-process-args ...args-array
         opts.args = args
     # 6
     else if num-args == 3 and is-arr args-array.1 and is-func args-array.2
-        log '6'
         [ cmd, args, oncomplete ] = args-array
         opts = { cmd, args, oncomplete }
     # 7
@@ -973,6 +975,11 @@ function sys-process-args ...args-array
         opts.args = cmd-args
     else
         return aerror()
+
+    if opts.args then opts.args = compact opts.args.map ->
+        if not it?
+            warn "Skipping null/undefined arg (check args array)"
+        it
 
     opts
         ..type = type
@@ -1051,3 +1058,6 @@ function handle-stream-data-as-list stream-data, stream-config, string
             stream.pop()
 
     split.for-each -> stream.push it
+
+function is-phantom
+    true if window? and window.call-phantom and window._phantom

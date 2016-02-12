@@ -1,12 +1,14 @@
-var ref$, curry, join, last, map, each, compact, keys, values, sprintf, sysMod, sysGet, sysSet, sysOk, sysExec, sysSpawn, sys, shellQuote, speak, bullet, bulletSet, bulletGet, log, info, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, disableColors, forceColors, squeak, squeakSet, squeakGet, icomplain, complain, iwarn, ierror, warn, error, aerror, types, ofNumber, ofObject, okNumber, isArray, isObject, isString, isBoolean, isFunction, isInteger, isIntegerStrict, isNumber, isNumberStrict, isIntegerPositive, isIntegerNonNegative, isBuffer, ofNum, ofObj, okNum, isArr, isObj, isStr, isBool, isFunc, isInt, isIntStrict, isNum, isNumStrict, isIntPos, isIntNonNeg, isBuf, util, shuffleArray, mergeObjects, ord, chr, range, times, array, toArray, opt, getopt, config, Identifier, k, v, slice$ = [].slice;
+var ref$, curry, join, last, map, each, compact, keys, values, sprintf, sysMod, sysGet, sysSet, sysOk, sysExec, sysSpawn, sys, shellQuote, speak, bullet, bulletSet, bulletGet, log, info, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, disableColors, forceColors, squeak, squeakSet, squeakGet, icomplain, complain, iwarn, ierror, warn, error, aerror, types, ofNumber, ofObject, okNumber, isArray, isObject, isString, isBoolean, isFunction, isInteger, isIntegerStrict, isNumber, isNumberStrict, isIntegerPositive, isIntegerNonNegative, isBuffer, ofNum, ofObj, okNum, isArr, isObj, isStr, isBool, isFunc, isInt, isIntStrict, isNum, isNumStrict, isIntPos, isIntNonNeg, isBuf, util, shuffleArray, mergeObjects, ord, chr, range, times, array, toArray, flatArray, opt, getopt, config, Identifier, k, v, slice$ = [].slice;
 ref$ = require("prelude-ls"), curry = ref$.curry, join = ref$.join, last = ref$.last, map = ref$.map, each = ref$.each, compact = ref$.compact, keys = ref$.keys, values = ref$.values;
 sprintf = require('sprintf');
 ref$ = sysMod = require('./sys'), sysGet = ref$.sysGet, sysSet = ref$.sysSet, sysOk = ref$.sysOk, sysExec = ref$.sysExec, sysSpawn = ref$.sysSpawn, sys = ref$.sys, shellQuote = ref$.shellQuote;
 ref$ = speak = require('./speak'), bullet = ref$.bullet, bulletSet = ref$.bulletSet, bulletGet = ref$.bulletGet, log = ref$.log, info = ref$.info, green = ref$.green, brightGreen = ref$.brightGreen, blue = ref$.blue, brightBlue = ref$.brightBlue, red = ref$.red, brightRed = ref$.brightRed, yellow = ref$.yellow, brightYellow = ref$.brightYellow, cyan = ref$.cyan, brightCyan = ref$.brightCyan, magenta = ref$.magenta, brightMagenta = ref$.brightMagenta, disableColors = ref$.disableColors, forceColors = ref$.forceColors;
 ref$ = squeak = require('./squeak'), squeakSet = ref$.squeakSet, squeakGet = ref$.squeakGet, icomplain = ref$.icomplain, complain = ref$.complain, iwarn = ref$.iwarn, ierror = ref$.ierror, warn = ref$.warn, error = ref$.error, aerror = ref$.aerror;
 ref$ = types = require('./types'), ofNumber = ref$.ofNumber, ofObject = ref$.ofObject, okNumber = ref$.okNumber, isArray = ref$.isArray, isObject = ref$.isObject, isString = ref$.isString, isBoolean = ref$.isBoolean, isFunction = ref$.isFunction, isInteger = ref$.isInteger, isIntegerStrict = ref$.isIntegerStrict, isNumber = ref$.isNumber, isNumberStrict = ref$.isNumberStrict, isIntegerPositive = ref$.isIntegerPositive, isIntegerNonNegative = ref$.isIntegerNonNegative, isBuffer = ref$.isBuffer, ofNum = ref$.ofNum, ofObj = ref$.ofObj, okNum = ref$.okNum, isArr = ref$.isArr, isObj = ref$.isObj, isStr = ref$.isStr, isBool = ref$.isBool, isFunc = ref$.isFunc, isInt = ref$.isInt, isIntStrict = ref$.isIntStrict, isNum = ref$.isNum, isNumStrict = ref$.isNumStrict, isIntPos = ref$.isIntPos, isIntNonNeg = ref$.isIntNonNeg, isBuf = ref$.isBuf;
-ref$ = util = require('./util'), shuffleArray = ref$.shuffleArray, mergeObjects = ref$.mergeObjects, ord = ref$.ord, chr = ref$.chr, range = ref$.range, times = ref$.times, array = ref$.array, toArray = ref$.toArray;
-getopt = (opt = require('./opt')).getopt;
+ref$ = util = require('./util'), shuffleArray = ref$.shuffleArray, mergeObjects = ref$.mergeObjects, ord = ref$.ord, chr = ref$.chr, range = ref$.range, times = ref$.times, array = ref$.array, toArray = ref$.toArray, flatArray = ref$.flatArray;
+if (!isPhantom()) {
+  getopt = (opt = require('./opt')).getopt;
+}
 config = {
   pkg: {
     confSet: confSet
@@ -173,7 +175,8 @@ Identifier.util = {
   range: range,
   times: times,
   array: array,
-  toArray: toArray
+  toArray: toArray,
+  flatArray: flatArray
 };
 ['main', 'speak', 'squeak', 'color', 'util', 'types', 'sys'].forEach(function(it){
   return import$(Identifier.all, Identifier[it]);
@@ -181,6 +184,11 @@ Identifier.util = {
 for (k in ref$ = Identifier.all) {
   v = ref$[k];
   module.exports[k] = v;
+}
+function isPhantom(){
+  if ((typeof window != 'undefined' && window !== null) && window.callPhantom && window._phantom) {
+    return true;
+  }
 }
 function import$(obj, src){
   var own = {}.hasOwnProperty;
