@@ -52,10 +52,13 @@ our =
         # exit, but you probably don't want to -- (i)error() is meant to be
         # used to mean serious errors.
         #
-        # in fish-lib (i)error() is never preceded by return -- if for some
-        # reason you do set this to 'allow' you probably want to do it for
-        # short bursts of code and make sure to call 'return (i)error()'
-        # instead of just '(i)error()'
+        # in fish-lib (i)error() is never preceded by return, so if you set
+        # this to allow it's probably a bad idea to call any fish-lib
+        # routines.
+        #
+        # if for some reason you do set this to 'allow' you probably want to
+        # do it for short bursts of code and make sure to call 'return
+        # (i)error()' instead of just '(i)error()'
         #
         # if it's set to 'throw' it will throw an exception with the given
         # message.
@@ -183,7 +186,12 @@ function squeak-get key
 #
 # @private
 
-function pcomplain { msg, type, internal, print-stack-trace, code, stack-rewind = 0 }
+function pcomplain opts
+    { msg, type, internal, code, stack-rewind = 0 } = opts
+    error-type = opts.error ? our.opts.error
+    api-error-type = opts.api-error ? our.opts.api-error
+    print-stack-trace-opt = opts.print-stack-trace ? our.opts.print-stack-trace
+
     if not is-phantom()
         util := require 'util' unless util
     else
@@ -198,8 +206,6 @@ function pcomplain { msg, type, internal, print-stack-trace, code, stack-rewind 
                             it
                     .join ' '
 
-    print-stack-trace-opt = print-stack-trace
-
     # --- will call pcomplain() again, but won't infinitely loop.
     return iwarn 'bad param msg' unless is-arr msg
 
@@ -207,47 +213,49 @@ function pcomplain { msg, type, internal, print-stack-trace, code, stack-rewind 
         -> if is-obj it then util.inspect it else it
         msg
 
+    msg-begin = []
+    msg-main = msg
+    msg-end = []
+
     print-file-and-line = false
 
     if type is 'aerror'
-        msg.push "bad call." unless msg.length
-        msg.unshift "Api error:"
-        error = true
+        msg-main.push "bad call." unless msg-main.length
+        msg-begin.push "Api error:"
         print-file-and-line = true
         print-stack-trace = true
-        allow = our.opts.api-error is 'allow'
-        throws = our.opts.api-error is 'throw'
+        allow = api-error-type is 'allow'
+        throws = api-error-type is 'throw'
     else if type is 'ierror'
-        msg.push "something's wrong." unless msg.length
-        msg.unshift "Internal error:"
+        msg-main.push "something's wrong." unless msg-main.length
+        msg-begin.push "Internal error:"
         print-file-and-line = true
         print-stack-trace = true
-        allow = our.opts.error is 'allow'
-        throws = our.opts.error is 'throw'
+        allow = error-type is 'allow'
+        throws = error-type is 'throw'
     else if type is 'iwarn'
-        msg.push "something's wrong." unless msg.length
-        msg.unshift "Internal warning:"
+        msg-main.push "something's wrong." unless msg-main.length
+        msg-begin.push "Internal warning:"
         print-file-and-line = true
         print-stack-trace = true
         allow = true
         throws = false
     else if type is 'error'
-        msg.push "something's wrong." unless msg.length
-        msg.unshift "Error:"
+        msg-main.push "something's wrong." unless msg-main.length
+        msg-begin.push "Error:"
         print-file-and-line = false
         print-stack-trace = false
-        allow = our.opts.error is 'allow'
-        throws = our.opts.error is 'throw'
+        allow = error-type is 'allow'
+        throws = error-type is 'throw'
     else if type is 'warn'
-        msg.push "something's wrong." unless msg.length
-        msg.unshift "Warning:"
+        msg-main.push "something's wrong." unless msg-main.length
+        msg-begin.push "Warning:"
         print-file-and-line = false
         print-stack-trace = false
         allow = true
         throws = false
 
     print-stack-trace = that if print-stack-trace-opt?
-    print-stack-trace = that if our.opts.print-stack-trace?
 
     # --- disable colors.
     if throws then yellow := green := bright-red := red := ->
@@ -261,20 +269,20 @@ function pcomplain { msg, type, internal, print-stack-trace, code, stack-rewind 
     if print-stack-trace or print-file-and-line
         [stack, funcname, filename, line-num] = get-stack stack-rewind
 
-    msg.0 = do ->
+    # --- msg-begin will be joined on ''.
+    msg-begin.unshift do ->
         ind = ' ' * bullet-get 'indent'
         spa = ' ' * bullet-get 'spacing'
 
         # --- -warn-on-error to avoid infinite loop.
         bul = bullet-color [bullet!, {-warn-on-error}]
 
-        msg0 = if is-obj msg.0 then util.inspect msg.0 else msg.0
-
-        ind + bul + spa + msg0
+        #msg0 = if is-obj msg.0 then util.inspect msg.0 else msg.0
+        ind + bul + spa
 
     # --- (file:line)
     if print-file-and-line
-        msg.push do
+        msg-end.push do
             "(" +
             "#{yellow [filename, {-warn-on-error}]}" +
             (do ->
@@ -287,19 +295,27 @@ function pcomplain { msg, type, internal, print-stack-trace, code, stack-rewind 
             ")"
 
     if print-stack-trace
-        msg.push "\n"
+        msg-end.push "\n"
         if m?
-            msg.push m[2]
+            msg-end.push m[2]
         else
-            msg.push stack
+            msg-end.push stack
 
-    msg.push "\n"
-    msg-str = join ' ' msg
+    msg-end.push "\n"
+
+    msg-begin-str = join '' msg-begin
+    msg-main-str = join ' ' msg-main
+    msg-end-str = join ' ' msg-end
+
+    msg-str = join ' ' array do
+        msg-begin-str
+        msg-main-str
+        msg-end-str
 
     if throws
-        throw new Error msg-str
+        throw new Error msg-main-str
 
-    process.stderr.write join ' ' msg
+    process.stderr.write msg-str
 
     if not allow
         code ?= 1
