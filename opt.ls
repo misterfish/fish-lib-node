@@ -38,6 +38,10 @@ path = void
 
 nopt = require 'nopt'
 
+{ is-array, } = require './types'
+{ bright-red, } = require './speak'
+{ complain, } = require './squeak'
+
 function getopt args
     path := require 'path' unless path
 

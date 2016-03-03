@@ -1,4 +1,4 @@
-var childProcess, ref$, last, keys, join, map, each, compact, isBuffer, isString, isFunc, isObj, isArr, isStr, aerror, iwarn, warn, error, log, bullet, array, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
+var childProcess, ref$, last, keys, join, map, each, compact, sprintf, isBuffer, isString, isFunc, isObj, isArr, isStr, aerror, iwarn, warn, error, log, bullet, green, brightRed, yellow, magenta, cyan, array, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
 out$.init = init;
 out$.sysGet = sysGet;
 out$.sysSet = sysSet;
@@ -9,9 +9,10 @@ out$.sys = sys;
 out$.shellQuote = shellQuote;
 childProcess = require('child_process');
 ref$ = require("prelude-ls"), last = ref$.last, keys = ref$.keys, join = ref$.join, map = ref$.map, each = ref$.each, compact = ref$.compact;
+sprintf = require('sprintf');
 ref$ = require('./types'), isBuffer = ref$.isBuffer, isString = ref$.isString, isFunc = ref$.isFunc, isObj = ref$.isObj, isArr = ref$.isArr, isStr = ref$.isStr;
 ref$ = require('./squeak'), aerror = ref$.aerror, iwarn = ref$.iwarn, warn = ref$.warn, error = ref$.error;
-ref$ = require('./speak'), log = ref$.log, bullet = ref$.bullet;
+ref$ = require('./speak'), log = ref$.log, bullet = ref$.bullet, green = ref$.green, brightRed = ref$.brightRed, yellow = ref$.yellow, magenta = ref$.magenta, cyan = ref$.cyan;
 array = require('./util').array;
 our = {
   pkg: {

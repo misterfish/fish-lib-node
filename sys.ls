@@ -187,13 +187,14 @@ export
 child-process = require 'child_process'
 
 { last, keys, join, map, each, compact, } = require "prelude-ls"
+sprintf = require 'sprintf'
 
 #main = if is-phantom() then global.main else require.main
 #{ } = main.exports
 
 { is-buffer, is-string, is-func, is-obj, is-arr, is-str, } = require './types'
 { aerror, iwarn, warn, error, } = require './squeak'
-{ log, bullet, } = require './speak'
+{ log, bullet, green, bright-red, yellow, magenta, cyan, } = require './speak'
 { array, } = require './util'
 
 our =

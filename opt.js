@@ -1,7 +1,10 @@
-var path, nopt, out$ = typeof exports != 'undefined' && exports || this;
+var path, nopt, isArray, brightRed, complain, out$ = typeof exports != 'undefined' && exports || this;
 out$.getopt = getopt;
 path = void 8;
 nopt = require('nopt');
+isArray = require('./types').isArray;
+brightRed = require('./speak').brightRed;
+complain = require('./squeak').complain;
 function getopt(args){
   var knownOpts, shortHands, types, arrangedKeys, i$, len$, opt, v, type, opts, parsed, k;
   if (!path) {
