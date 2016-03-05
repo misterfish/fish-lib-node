@@ -783,7 +783,7 @@ function handleStreamData(streamData, streamConfig, string){
   var print, procStream, list, handle;
   print = streamConfig.print, procStream = streamConfig.procStream, list = streamConfig.list;
   if (print) {
-    procStream.write(string + '\n');
+    procStream.write(string);
     return;
   }
   handle = list ? handleStreamDataAsList : handleStreamDataAsScalar;

@@ -1001,7 +1001,7 @@ function handle-stream-data stream-data, stream-config, string
 
     # --- print to stderr/stdout and return.
     if print
-        proc-stream.write string + '\n'
+        proc-stream.write string
         return
 
     # --- store for sending to oncomplete().
