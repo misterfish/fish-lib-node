@@ -431,6 +431,9 @@ function sysdoSpawnSync(opts){
   stdout = ret.stdout = outputToScalarOrList(stdout, outSplit, outSplitRemoveTrailingElement);
   stderr = ret.stderr = outputToScalarOrList(stderr, errSplit, errSplitRemoveTrailingElement);
   if (theError) {
+    if (stderr != null && !quiet) {
+      console.warn(stderr);
+    }
     syserror({
       cmd: cmd,
       oncomplete: oncomplete,
@@ -447,6 +450,9 @@ function sysdoSpawnSync(opts){
     return ret;
   }
   if (status) {
+    if (stderr != null && !quiet && !die) {
+      console.warn(stderr);
+    }
     syserror({
       cmd: cmd,
       oncomplete: oncomplete,
@@ -623,6 +629,9 @@ function syserror(arg$){
   }
   str = join('', compact(array("Couldn't execute cmd", strCmd, strExit, strSig, strNodeErr)));
   if (die) {
+    if (stderr != null) {
+      console.warn(stderr);
+    }
     error(str);
     process.exit(code);
   } else {

@@ -45,6 +45,9 @@
 #
 # it spawns a shell and buffers the output.
 #
+# it is also probably what you want if the child process will be interactive
+# on the console.
+#
 # one major disadvantage is that Node will kill the child process if it
 # emits too much data on stdout or stderr (see 'maxBuffer' below); for
 # non-trivial commands you should probably be using spawn.
@@ -657,6 +660,9 @@ function sysdo-spawn-sync opts
 
     # --- e.g. /nonexistent/cmd
     if the-error
+        # --- stderr will actually probably never be defined.
+        console.warn stderr if stderr? and not quiet
+
         # --- do some common error handling, then call oncomplete if it's
         # there, then return the ret object.
         syserror {
@@ -671,6 +677,9 @@ function sysdo-spawn-sync opts
 
     # --- e.g. find /nonexistent/file
     if status
+        # --- if we're going to die, it will be printed during syserror().
+        console.warn stderr if stderr? and not quiet and not die
+
         # --- do some common error handling, then call oncomplete if it's
         # there, then return the ret object.
         syserror {
@@ -877,6 +886,12 @@ function syserror ({ cmd, code, signal, oncomplete, node-err, stdout, stderr, di
         str-node-err
 
     if die
+        # --- in exec sync case, it has already been printed by node, and
+        # stderr will be null.
+        #
+        # but there might be async cases where this printing is undesirable. XXX
+        console.warn stderr if stderr?
+
         error str
         process.exit code
     else
