@@ -57,8 +57,6 @@ function getopt args
     types =
         b:  Boolean
         s:  String
-        # --- 'real'
-        r:  Number
         p:  path
         ms:  Array
 

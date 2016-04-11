@@ -15,7 +15,6 @@ function getopt(args){
   types = {
     b: Boolean,
     s: String,
-    r: Number,
     p: path,
     ms: Array
   };
