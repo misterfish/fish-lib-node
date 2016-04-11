@@ -1,4 +1,4 @@
-var ref$, curry, values, join, array, config, our, out$ = typeof exports != 'undefined' && exports || this, toString$ = {}.toString, slice$ = [].slice;
+var ref$, curry, values, join, array, isObj, config, our, out$ = typeof exports != 'undefined' && exports || this, toString$ = {}.toString, slice$ = [].slice;
 out$.bulletSet = bulletSet;
 out$.bulletGet = bulletGet;
 out$.bullet = bullet;
@@ -20,6 +20,7 @@ out$.magenta = magenta;
 out$.brightMagenta = brightMagenta;
 ref$ = require("prelude-ls"), curry = ref$.curry, values = ref$.values, join = ref$.join;
 array = require('./util').array;
+isObj = require('./types').isObj;
 config = {
   bullets: {
     ghost: '꣐',
@@ -123,24 +124,28 @@ function info(){
   prnt[0] = ind + bul + spa + prnt[0];
   console.log.apply(console, prnt);
 }
-function bulletSet(opts){
-  var that, ref$, s;
-  if ((that = opts.str) != null) {
-    our.bullet.str = that;
-  } else if ((that = opts.key) != null) {
-    our.bullet.str = (ref$ = config.bullets[that]) != null ? ref$ : ' ';
-  }
-  if ((s = opts.spacing) != null) {
-    if (!isNum(s)) {
-      return iwarn('bad spacing');
+function bulletSet(arg){
+  var opts, that, ref$, s;
+  if (isObj(opts = arg)) {
+    if ((that = opts.str) != null) {
+      our.bullet.str = that;
+    } else if ((that = opts.type) != null) {
+      our.bullet.str = (ref$ = config.bullets[that]) != null ? ref$ : ' ';
     }
-    our.bullet.spacing = s;
-  }
-  if ((s = opts.indent) != null) {
-    if (!isNum(s)) {
-      return iwarn('bad indent');
+    if ((s = opts.spacing) != null) {
+      if (!isNum(s)) {
+        return iwarn('bad spacing');
+      }
+      our.bullet.spacing = s;
     }
-    return our.bullet.indent = s;
+    if ((s = opts.indent) != null) {
+      if (!isNum(s)) {
+        return iwarn('bad indent');
+      }
+      return our.bullet.indent = s;
+    }
+  } else {
+    return our.bullet.str = arg;
   }
 }
 function bulletGet(val){

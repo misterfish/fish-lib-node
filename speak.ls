@@ -24,6 +24,7 @@ export
 
 { curry, values, join, } = require "prelude-ls"
 { array, } = require './util'
+{ is-obj, } = require './types'
 
 config =
     bullets:
@@ -122,17 +123,20 @@ function info
     console.log.apply console, prnt
     void
 
-function bullet-set opts
-    if opts.str?
-        our.bullet.str = that
-    else if opts.key?
-        our.bullet.str = config.bullets[that] ? ' '
-    if (s = opts.spacing)?
-        return iwarn 'bad spacing' unless is-num s
-        our.bullet.spacing = s
-    if (s = opts.indent)?
-        return iwarn 'bad indent' unless is-num s
-        our.bullet.indent = s
+function bullet-set arg
+    if is-obj (opts = arg)
+        if opts.str?
+            our.bullet.str = that
+        else if opts.type?
+            our.bullet.str = config.bullets[that] ? ' '
+        if (s = opts.spacing)?
+            return iwarn 'bad spacing' unless is-num s
+            our.bullet.spacing = s
+        if (s = opts.indent)?
+            return iwarn 'bad indent' unless is-num s
+            our.bullet.indent = s
+    else
+        our.bullet.str = arg
 
 function bullet-get val
     return aerror 'no such bullet property' bright-red val unless our.bullet.has-own-property val
