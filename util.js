@@ -1,4 +1,4 @@
-var ref$, isPositiveInt, isInt, isNum, isStr, isFunc, aerror, warn, green, brightRed, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
+var ref$, isIntegerPositive, isInt, isNum, isStr, isFunc, aerror, warn, green, brightRed, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
 out$.shuffleArray = shuffleArray;
 out$.mergeObjects = mergeObjects;
 out$.ord = ord;
@@ -8,7 +8,7 @@ out$.times = times;
 out$.array = array;
 out$.toArray = toArray;
 out$.flatArray = flatArray;
-ref$ = require('./types'), isPositiveInt = ref$.isPositiveInt, isInt = ref$.isInt, isNum = ref$.isNum, isStr = ref$.isStr, isFunc = ref$.isFunc;
+ref$ = require('./types'), isIntegerPositive = ref$.isIntegerPositive, isInt = ref$.isInt, isNum = ref$.isNum, isStr = ref$.isStr, isFunc = ref$.isFunc;
 ref$ = require('./squeak'), aerror = ref$.aerror, warn = ref$.warn;
 ref$ = require('./speak'), green = ref$.green, brightRed = ref$.brightRed;
 function shuffleArray(input){
@@ -81,7 +81,7 @@ function range(a, b, func){
 }
 function times(n, func){
   var i$, i, results$ = [];
-  if (!isPositiveInt(n)) {
+  if (!isIntegerPositive(n)) {
     return aerror();
   }
   for (i$ = 1; i$ <= n; ++i$) {

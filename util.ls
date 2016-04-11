@@ -9,7 +9,7 @@ export
     to-array
     flat-array
 
-{ is-positive-int, is-int, is-num, is-str, is-func, } = require './types'
+{ is-integer-positive, is-int, is-num, is-str, is-func, } = require './types'
 { aerror, warn, } = require './squeak'
 { green, bright-red, } = require './speak'
 
@@ -63,7 +63,7 @@ function range a, b, func
 #
 # the idx is 0-based to make it like ruby.
 function times n, func
-    return aerror() unless is-positive-int n
+    return aerror() unless is-integer-positive n
     for i from 1 to n
         func i-1
 
