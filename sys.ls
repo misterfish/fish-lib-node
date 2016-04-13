@@ -197,7 +197,7 @@ sprintf = require 'sprintf'
 
 { is-buffer, is-string, is-func, is-obj, is-arr, is-str, } = require './types'
 { aerror, iwarn, warn, error, } = require './squeak'
-{ log, bullet, green, bright-red, yellow, magenta, cyan, } = require './speak'
+{ log, bullet, bullet-get, green, bright-red, yellow, magenta, cyan, } = require './speak'
 { array, } = require './util'
 
 our =
