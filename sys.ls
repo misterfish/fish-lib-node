@@ -427,7 +427,7 @@ function sysdo-exec-sync opts
     # for a zero-status process which wrote to stderr it's not trivial
     # to do and we don't currently support it.
 
-    opts =
+    call-opts =
         stdio: array do
             0                               # stdin
 
@@ -443,13 +443,13 @@ function sysdo-exec-sync opts
                 2
             else 'pipe'                     # stderr
 
-    opts <<< invocation-opts
+    call-opts <<< invocation-opts
 
     stderr = '<suppressed or empty>'
 
     # --- exec-sync throws.
     try
-        stdout = child-process.exec-sync cmd, opts
+        stdout = child-process.exec-sync cmd, call-opts
         stdout = output-to-scalar-or-list do
             stdout
             out-split
@@ -643,7 +643,24 @@ function sysdo-spawn-sync opts
         invocation-opts,
     } = opts
 
-    ret = child-process.spawn-sync cmd, args, invocation-opts
+    call-opts =
+        stdio: array do
+            0                               # stdin
+
+            if out-ignore
+                'ignore'
+            else if out-print
+                1
+            else 'pipe'                     # stdout
+
+            if err-ignore
+                'ignore'
+            else if err-print
+                2
+            else 'pipe'                     # stderr
+
+    call-opts <<< invocation-opts
+    ret = child-process.spawn-sync cmd, args, call-opts
 
     # --- output param is just an array containing stdout and stderr.
     { pid, output, stdout, stderr, status, signal, } = ret

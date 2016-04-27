@@ -170,7 +170,7 @@ function sysdoExec(opts){
   }
 }
 function sysdoExecSync(opts){
-  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, quietNodeErr, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, stderr, stdout, ret, err, pid, output, status, signal, theError;
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, quietNodeErr, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, callOpts, stderr, stdout, ret, err, pid, output, status, signal, theError;
   cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
     : [], outIgnore = (ref$ = opts.outIgnore) != null
@@ -202,17 +202,17 @@ function sysdoExecSync(opts){
     : our.opts.outSplitRemoveTrailingElement, errSplitRemoveTrailingElement = (ref$ = opts.errSplitRemoveTrailingElement) != null
     ? ref$
     : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
-  opts = {
+  callOpts = {
     stdio: array(0, outIgnore
       ? 'ignore'
       : outPrint ? 1 : 'pipe', errIgnore
       ? 'ignore'
       : errPrint ? 2 : 'pipe')
   };
-  import$(opts, invocationOpts);
+  import$(callOpts, invocationOpts);
   stderr = '<suppressed or empty>';
   try {
-    stdout = childProcess.execSync(cmd, opts);
+    stdout = childProcess.execSync(cmd, callOpts);
     stdout = outputToScalarOrList(stdout, outSplit, outSplitRemoveTrailingElement);
     ret = {
       ok: true,
@@ -393,7 +393,7 @@ function sysdoSpawn(opts){
   }
 }
 function sysdoSpawnSync(opts){
-  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, quietNodeErr, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, ret, pid, output, stdout, stderr, status, signal, theError;
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, quietNodeErr, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, callOpts, ret, pid, output, stdout, stderr, status, signal, theError;
   cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
     : [], outIgnore = (ref$ = opts.outIgnore) != null
@@ -425,7 +425,15 @@ function sysdoSpawnSync(opts){
     : our.opts.outSplitRemoveTrailingElement, errSplitRemoveTrailingElement = (ref$ = opts.errSplitRemoveTrailingElement) != null
     ? ref$
     : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
-  ret = childProcess.spawnSync(cmd, args, invocationOpts);
+  callOpts = {
+    stdio: array(0, outIgnore
+      ? 'ignore'
+      : outPrint ? 1 : 'pipe', errIgnore
+      ? 'ignore'
+      : errPrint ? 2 : 'pipe')
+  };
+  import$(callOpts, invocationOpts);
+  ret = childProcess.spawnSync(cmd, args, callOpts);
   pid = ret.pid, output = ret.output, stdout = ret.stdout, stderr = ret.stderr, status = ret.status, signal = ret.signal;
   theError = ret.error;
   stdout = ret.stdout = outputToScalarOrList(stdout, outSplit, outSplitRemoveTrailingElement);
