@@ -11,8 +11,8 @@ export
 
 { last, join, map, } = require "prelude-ls"
 
-#main = require.main
-#{ } = main.exports
+# main = require.main
+# { } = main.exports
 
 # --- is-obj, is-arr,
 types = require './types'
@@ -20,13 +20,13 @@ types = require './types'
 # --- bullet, bullet-get, green, bright-red, yellow, red,
 speak = require './speak'
 
-# --- array, to-array,
+# --- array,
 util = require './util'
 
-# --- lazy loaded module (required when needed).
-#
-# this is like this as a phantomjs workaround.
-util = void
+# --- node-util (node's util) is lazy loaded (required when needed) -- this
+# is like this as a phantomjs workaround.
+
+node-util = void
 
 our =
     # --- functions which we need from main but which main doesn't want to
@@ -112,12 +112,12 @@ function complain ...msg
 #
 # usage: iwarn 'string' [, 'string', ...], opts = {}
 
-function iwarn ...msg
-    opts = last msg
-    if types.is-obj opts then msg.pop() else opts = {}
+function iwarn ...args
+    opts = last args
+    if types.is-obj opts then args.pop() else opts = {}
 
     pcomplain opts <<<
-        msg: msg
+        msg: args
         type: 'iwarn'
         internal: true
 
@@ -125,12 +125,12 @@ function iwarn ...msg
 #
 # usage: ierror 'string' [, 'string', ...], opts = {}
 
-function ierror ...msg
-    opts = last msg
-    if types.is-obj opts then msg.pop() else opts = {}
+function ierror ...args
+    opts = last args
+    if types.is-obj opts then args.pop() else opts = {}
 
     pcomplain opts <<<
-        msg: msg
+        msg: args
         type: 'ierror'
         internal: true
 
@@ -138,12 +138,12 @@ function ierror ...msg
 #
 # usage: warn 'string' [, 'string', ...], opts = {}
 
-function warn ...msg
-    opts = last msg
-    if types.is-obj opts then msg.pop() else opts = {}
+function warn ...args
+    opts = last args
+    if types.is-obj opts then args.pop() else opts = {}
 
     pcomplain opts <<<
-        msg: msg
+        msg: args
         type: 'warn'
         internal: false
 
@@ -151,12 +151,12 @@ function warn ...msg
 #
 # usage: error 'string' [, 'string', ...], opts = {}
 
-function error ...msg
-    opts = last msg
-    if types.is-obj opts then msg.pop() else opts = {}
+function error ...args
+    opts = last args
+    if types.is-obj opts then args.pop() else opts = {}
 
     pcomplain opts <<<
-        msg: msg
+        msg: args
         type: 'error'
         internal: false
 
@@ -164,12 +164,12 @@ function error ...msg
 #
 # usage: aerror 'string' [, 'string', ...], opts = {}
 
-function aerror ...msg
-    opts = last msg
-    if types.is-obj opts then msg.pop() else opts = {}
+function aerror ...args
+    opts = last args
+    if types.is-obj opts then args.pop() else opts = {}
 
     pcomplain opts <<<
-        msg: msg
+        msg: args
         type: 'aerror'
         internal: false
 
@@ -192,18 +192,18 @@ function squeak-get key
 # @private
 
 function pcomplain opts
-    { msg, type, internal, code, stack-rewind = 0 } = opts
+    { msg, type, internal, code, stack-rewind = 0, } = opts
     error-type = opts.error ? our.opts.error
     api-error-type = opts.api-error ? our.opts.api-error
     print-stack-trace-opt = opts.print-stack-trace ? our.opts.print-stack-trace
 
     if not is-phantom()
-        util := require 'util' unless util
+        node-util := require 'util' unless node-util
     else
-        util :=
+        node-util :=
             # just a simple inspector
             inspect: ->
-                util.to-array arguments
+                to-array arguments
                     .map ->
                         if it.to-string?
                             it.to-string()
@@ -215,7 +215,7 @@ function pcomplain opts
     return iwarn 'bad param msg' unless types.is-arr msg
 
     msg = map do
-        -> if types.is-obj it then util.inspect it else it
+        -> if types.is-obj it then node-util.inspect it else it
         msg
 
     msg-begin = []
@@ -282,7 +282,7 @@ function pcomplain opts
         # --- -warn-on-error to avoid infinite loop.
         bul = bullet-color [speak.bullet!, {-warn-on-error}]
 
-        #msg0 = if types.is-obj msg.0 then util.inspect msg.0 else msg.0
+        #msg0 = if types.is-obj msg.0 then node-util.inspect msg.0 else msg.0
         ind + bul + spa
 
     # --- (file:line)
@@ -320,7 +320,7 @@ function pcomplain opts
     if throws
         throw new Error msg-main-str
 
-    process.stderr.write msg-str
+    console.warn msg-str
 
     if not allow
         code ?= 1
@@ -338,7 +338,7 @@ function get-stack stack-rewind
     # --- take off 'Error'.
     stack := stack.replace // ^ \s* \S+ \s+ // '   '
 
-    [funcname, filename, line-num] = do ->
+    [ funcname, filename, line-num, ] = do ->
         # --- this will all break one day, but here we go:
         #
         # kill three frames to get back to the useful call, and then n more (n
@@ -357,7 +357,10 @@ function get-stack stack-rewind
         else
             ["«unknown-file»" "«unknown-line»"]
 
-    [stack, funcname, filename, line-num]
+    [ stack, funcname, filename, line-num, ]
 
 function is-phantom
     true if window? and window.call-phantom and window._phantom
+
+function to-array
+    [.. for &.0]

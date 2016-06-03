@@ -1,4 +1,4 @@
-var ref$, last, join, map, types, bullet, bulletGet, green, brightRed, yellow, red, array, util, our, out$ = typeof exports != 'undefined' && exports || this;
+var ref$, last, join, map, types, speak, util, nodeUtil, our, out$ = typeof exports != 'undefined' && exports || this;
 out$.init = init;
 out$.squeakSet = squeakSet;
 out$.icomplain = icomplain;
@@ -10,9 +10,9 @@ out$.error = error;
 out$.aerror = aerror;
 ref$ = require("prelude-ls"), last = ref$.last, join = ref$.join, map = ref$.map;
 types = require('./types');
-ref$ = require('./speak'), bullet = ref$.bullet, bulletGet = ref$.bulletGet, green = ref$.green, brightRed = ref$.brightRed, yellow = ref$.yellow, red = ref$.red;
-array = require('./util').array;
-util = void 8;
+speak = require('./speak');
+util = require('./util');
+nodeUtil = void 8;
 our = {
   pkg: {
     confSet: void 8
@@ -61,79 +61,79 @@ function complain(){
   return func.apply(null, msg.concat([opts]));
 }
 function iwarn(){
-  var msg, res$, i$, to$, opts;
+  var args, res$, i$, to$, opts;
   res$ = [];
   for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
     res$.push(arguments[i$]);
   }
-  msg = res$;
-  opts = last(msg);
+  args = res$;
+  opts = last(args);
   if (types.isObj(opts)) {
-    msg.pop();
+    args.pop();
   } else {
     opts = {};
   }
-  return pcomplain((opts.msg = msg, opts.type = 'iwarn', opts.internal = true, opts));
+  return pcomplain((opts.msg = args, opts.type = 'iwarn', opts.internal = true, opts));
 }
 function ierror(){
-  var msg, res$, i$, to$, opts;
+  var args, res$, i$, to$, opts;
   res$ = [];
   for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
     res$.push(arguments[i$]);
   }
-  msg = res$;
-  opts = last(msg);
+  args = res$;
+  opts = last(args);
   if (types.isObj(opts)) {
-    msg.pop();
+    args.pop();
   } else {
     opts = {};
   }
-  return pcomplain((opts.msg = msg, opts.type = 'ierror', opts.internal = true, opts));
+  return pcomplain((opts.msg = args, opts.type = 'ierror', opts.internal = true, opts));
 }
 function warn(){
-  var msg, res$, i$, to$, opts;
+  var args, res$, i$, to$, opts;
   res$ = [];
   for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
     res$.push(arguments[i$]);
   }
-  msg = res$;
-  opts = last(msg);
+  args = res$;
+  opts = last(args);
   if (types.isObj(opts)) {
-    msg.pop();
+    args.pop();
   } else {
     opts = {};
   }
-  return pcomplain((opts.msg = msg, opts.type = 'warn', opts.internal = false, opts));
+  return pcomplain((opts.msg = args, opts.type = 'warn', opts.internal = false, opts));
 }
 function error(){
-  var msg, res$, i$, to$, opts;
+  var args, res$, i$, to$, opts;
   res$ = [];
   for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
     res$.push(arguments[i$]);
   }
-  msg = res$;
-  opts = last(msg);
+  args = res$;
+  opts = last(args);
   if (types.isObj(opts)) {
-    msg.pop();
+    args.pop();
   } else {
     opts = {};
   }
-  return pcomplain((opts.msg = msg, opts.type = 'error', opts.internal = false, opts));
+  return pcomplain((opts.msg = args, opts.type = 'error', opts.internal = false, opts));
 }
 function aerror(){
-  var msg, res$, i$, to$, opts;
+  var args, res$, i$, to$, opts;
   res$ = [];
   for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
     res$.push(arguments[i$]);
   }
-  msg = res$;
-  opts = last(msg);
+  args = res$;
+  opts = last(args);
   if (types.isObj(opts)) {
-    msg.pop();
+    args.pop();
   } else {
     opts = {};
   }
-  return pcomplain((opts.msg = msg, opts.type = 'aerror', opts.internal = false, opts));
+  return pcomplain((opts.msg = args, opts.type = 'aerror', opts.internal = false, opts));
 }
 function init(arg$){
   var pkg, ref$;
@@ -153,7 +153,7 @@ function squeakSet(opts){
 }
 function squeakGet(key){
   if (!our.opts.hasOwnProperty(key)) {
-    return complain('No such key', brightRed(key));
+    return complain('No such key', speak.brightRed(key));
   }
   return our.opts[key];
 }
@@ -170,11 +170,11 @@ function pcomplain(opts){
     ? ref$
     : our.opts.printStackTrace;
   if (!isPhantom()) {
-    if (!util) {
-      util = require('util');
+    if (!nodeUtil) {
+      nodeUtil = require('util');
     }
   } else {
-    util = {
+    nodeUtil = {
       inspect: function(){
         return toArray(arguments).map(function(it){
           if (it.toString != null) {
@@ -191,7 +191,7 @@ function pcomplain(opts){
   }
   msg = map(function(it){
     if (types.isObj(it)) {
-      return util.inspect(it);
+      return nodeUtil.inspect(it);
     } else {
       return it;
     }
@@ -250,7 +250,7 @@ function pcomplain(opts){
     printStackTrace = that;
   }
   if (throws) {
-    yellow = green = brightRed = red = function(it){
+    speak.yellow = speak.green = speak.brightRed = speak.red = function(it){
       if (types.isArr(it)) {
         return it[0];
       } else {
@@ -259,32 +259,32 @@ function pcomplain(opts){
     };
   }
   if (allow) {
-    bulletColor = brightRed;
+    bulletColor = speak.brightRed;
   } else {
-    bulletColor = red;
+    bulletColor = speak.red;
   }
   if (printStackTrace || printFileAndLine) {
     ref$ = getStack(stackRewind), stack = ref$[0], funcname = ref$[1], filename = ref$[2], lineNum = ref$[3];
   }
   msgBegin.unshift(function(){
     var ind, spa, bul;
-    ind = repeatString$(' ', bulletGet('indent'));
-    spa = repeatString$(' ', bulletGet('spacing'));
+    ind = repeatString$(' ', speak.bulletGet('indent'));
+    spa = repeatString$(' ', speak.bulletGet('spacing'));
     bul = bulletColor([
-      bullet(), {
+      speak.bullet(), {
         warnOnError: false
       }
     ]);
     return ind + bul + spa;
   }());
   if (printFileAndLine) {
-    msgEnd.push("(" + (yellow([
+    msgEnd.push("(" + (speak.yellow([
       filename, {
         warnOnError: false
       }
     ]) + "") + function(){
       if (funcname) {
-        return ":" + (green([
+        return ":" + (speak.green([
           funcname, {
             warnOnError: false
           }
@@ -292,7 +292,7 @@ function pcomplain(opts){
       } else {
         return '';
       }
-    }() + ":" + (brightRed([
+    }() + ":" + (speak.brightRed([
       lineNum, {
         warnOnError: false
       }
@@ -310,11 +310,11 @@ function pcomplain(opts){
   msgBeginStr = join('', msgBegin);
   msgMainStr = join(' ', msgMain);
   msgEndStr = join(' ', msgEnd);
-  msgStr = join(' ', array(msgBeginStr, msgMainStr, msgEndStr));
+  msgStr = join(' ', util.array(msgBeginStr, msgMainStr, msgEndStr));
   if (throws) {
     throw new Error(msgMainStr);
   }
-  process.stderr.write(msgStr);
+  console.warn(msgStr);
   if (!allow) {
     code == null && (code = 1);
     process.exit(code);
@@ -345,6 +345,14 @@ function isPhantom(){
   if ((typeof window != 'undefined' && window !== null) && window.callPhantom && window._phantom) {
     return true;
   }
+}
+function toArray(){
+  var i$, x$, ref$, len$, results$ = [];
+  for (i$ = 0, len$ = (ref$ = arguments[0]).length; i$ < len$; ++i$) {
+    x$ = ref$[i$];
+    results$.push(x$);
+  }
+  return results$;
 }
 function import$(obj, src){
   var own = {}.hasOwnProperty;
