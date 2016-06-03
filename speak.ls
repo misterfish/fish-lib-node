@@ -33,19 +33,19 @@ squeak = require './squeak'
 
 config =
     cols:
-        red:            31
-        bright-red:     91
-        green:          32
-        bright-green:   92
-        yellow:         33
-        bright-yellow:  93
-        blue:           34
-        bright-blue:    94
-        magenta:        35
-        bright-magenta: 95
-        cyan:           36
-        bright-cyan:    96
-        reset:          0
+        red:                31
+        'bright-red':       91
+        green:              32
+        'bright-green':     92
+        yellow:             33
+        'bright-yellow':    93
+        blue:               34
+        'bright-blue':      94
+        magenta:            35
+        'bright-magenta':   95
+        cyan:               36
+        'bright-cyan':      96
+        reset:              0
 
     bullets:
         ghost: '꣐'

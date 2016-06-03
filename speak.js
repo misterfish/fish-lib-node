@@ -25,17 +25,17 @@ squeak = require('./squeak');
 config = {
   cols: {
     red: 31,
-    brightRed: 91,
+    'bright-red': 91,
     green: 32,
-    brightGreen: 92,
+    'bright-green': 92,
     yellow: 33,
-    brightYellow: 93,
+    'bright-yellow': 93,
     blue: 34,
-    brightBlue: 94,
+    'bright-blue': 94,
     magenta: 35,
-    brightMagenta: 95,
+    'bright-magenta': 95,
     cyan: 36,
-    brightCyan: 96,
+    'bright-cyan': 96,
     reset: 0
   },
   bullets: {
