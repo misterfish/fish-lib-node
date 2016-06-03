@@ -164,7 +164,7 @@
 # the async versions generally allow much more control.
 #
 # in the sync case of both exec and spawn they return an object on success:
-#   { ok, code, out (alias to stdout), stdout, stderr }
+#   { ok, code, out (alias to stdout), stdout, stderr, }
 #
 # first they pass this object to oncomplete, if it exists.
 #
@@ -536,13 +536,6 @@ function sysdo-exec-async opts
 
     child = child-process.exec cmd, invocation-opts, on-child
 
-    # --- just in case we get null for some reason.
-#    if not child?
-#        if not quiet
-#            complain = if die then error else warn
-#            complain 'Null return from child-process.exec()'
-#        oncomplete { ok: false, } if oncomplete?
-
 # | sysdo-exec-async
 
 # --- actually do the spawn.
@@ -551,29 +544,29 @@ function sysdo-exec-async opts
 
 function sysdo-spawn opts
     {
-        cmd,
-        oncomplete,
-        args = [],
+        cmd
+        oncomplete
+        args = []
 
-        out-ignore = our.opts.out-ignore,
-        err-ignore = our.opts.err-ignore,
+        out-ignore = our.opts.out-ignore
+        err-ignore = our.opts.err-ignore
 
-        die = our.opts.die,
-        verbose = our.opts.verbose,
-        quiet = our.opts.quiet,
-        quiet-on-exit = our.opts.quiet-on-exit,
-        sync = our.opts.sync,
-        out-print = our.opts.out-print,
-        err-print = our.opts.err-print,
-        out-split = our.opts.out-split,
-        err-split = our.opts.err-split,
+        die = our.opts.die
+        verbose = our.opts.verbose
+        quiet = our.opts.quiet
+        quiet-on-exit = our.opts.quiet-on-exit
+        sync = our.opts.sync
+        out-print = our.opts.out-print
+        err-print = our.opts.err-print
+        out-split = our.opts.out-split
+        err-split = our.opts.err-split
 
-        quiet-node-err = our.opts.quiet-node-err,
+        quiet-node-err = our.opts.quiet-node-err
 
         out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element
         err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element
 
-        invocation-opts,
+        invocation-opts
     } = opts
 
     if quiet
