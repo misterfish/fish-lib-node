@@ -1,4 +1,4 @@
-var ref$, curry, values, join, array, isObj, config, our, out$ = typeof exports != 'undefined' && exports || this, toString$ = {}.toString, slice$ = [].slice;
+var ref$, curry, values, join, util, types, squeak, config, our, out$ = typeof exports != 'undefined' && exports || this, toString$ = {}.toString;
 out$.bulletSet = bulletSet;
 out$.bulletGet = bulletGet;
 out$.bullet = bullet;
@@ -19,21 +19,35 @@ out$.brightCyan = brightCyan;
 out$.magenta = magenta;
 out$.brightMagenta = brightMagenta;
 ref$ = require("prelude-ls"), curry = ref$.curry, values = ref$.values, join = ref$.join;
-array = require('./util').array;
-isObj = require('./types').isObj;
+util = require('./util');
+types = require('./types');
+squeak = require('./squeak');
 config = {
+  cols: {
+    red: 31,
+    brightRed: 91,
+    green: 32,
+    brightGreen: 92,
+    yellow: 33,
+    brightYellow: 93,
+    blue: 34,
+    brightBlue: 94,
+    magenta: 35,
+    brightMagenta: 95,
+    cyan: 36,
+    brightCyan: 96,
+    reset: 0
+  },
   bullets: {
     ghost: '꣐',
     star: '٭',
     bassClef: '𝄢',
     parallelLines: '𝄓',
-    segno: '𝄋',
     ypsili: '𝁐',
     straggismata: '𝁄',
     petasti: '𝁉',
     paraklitiki: '𝀉',
     dipli: '𝀒',
-    satanga: '᳅',
     bengali: 'ঈ'
   }
 };
@@ -63,33 +77,17 @@ function color(col, s){
   if (!isTty() && !our.colors.force) {
     return str;
   }
-  return join('', array(_color(col, opt), str, _color('reset', opt)));
+  return join('', util.array(_color(col, opt), str, _color('reset', opt)));
 }
 function colored(theColor){
   return curry(color)(theColor);
 }
 function _color(c, arg$){
-  var warnOnError, col;
-  warnOnError = (arg$ != null
+  var warnOnError, ref$, col;
+  warnOnError = (ref$ = (arg$ != null
     ? arg$
-    : {}).warnOnError;
-  warnOnError == null && (warnOnError = true);
-  col = {
-    red: 31,
-    'bright-red': 91,
-    green: 32,
-    'bright-green': 92,
-    yellow: 33,
-    'bright-yellow': 93,
-    blue: 34,
-    'bright-blue': 94,
-    magenta: 35,
-    'bright-magenta': 95,
-    cyan: 36,
-    'bright-cyan': 96,
-    reset: 0
-  }[c];
-  if (col == null) {
+    : {}).warnOnError) != null ? ref$ : true;
+  if ((col = config.cols[c]) == null) {
     if (warnOnError) {
       iwarn("Invalid color:", c);
     }
@@ -98,9 +96,7 @@ function _color(c, arg$){
   return '[' + col + 'm';
 }
 function log(){
-  var msg;
-  msg = slice$.call(arguments);
-  return console.log.apply(console, msg);
+  return bind$(console, 'log').apply(this, arguments);
 }
 function bullet(){
   var that;
@@ -126,20 +122,20 @@ function info(){
 }
 function bulletSet(arg){
   var opts, that, ref$, s;
-  if (isObj(opts = arg)) {
+  if (types.isObj(opts = arg)) {
     if ((that = opts.str) != null) {
       our.bullet.str = that;
     } else if ((that = opts.type) != null) {
       our.bullet.str = (ref$ = config.bullets[that]) != null ? ref$ : ' ';
     }
     if ((s = opts.spacing) != null) {
-      if (!isNum(s)) {
+      if (!types.isNum(s)) {
         return iwarn('bad spacing');
       }
       our.bullet.spacing = s;
     }
     if ((s = opts.indent) != null) {
-      if (!isNum(s)) {
+      if (!types.isNum(s)) {
         return iwarn('bad indent');
       }
       return our.bullet.indent = s;
@@ -150,7 +146,7 @@ function bulletSet(arg){
 }
 function bulletGet(val){
   if (!our.bullet.hasOwnProperty(val)) {
-    return aerror('no such bullet property', brightRed(val));
+    squeak.aerror('no such bullet property', brightRed(val));
   }
   return our.bullet[val];
 }
@@ -198,6 +194,9 @@ function forceColors(){
 }
 function isTty(){
   return process.stdout.isTTY;
+}
+function bind$(obj, key, target){
+  return function(){ return (target || obj)[key].apply(obj, arguments) };
 }
 function repeatString$(str, n){
   for (var r = ''; n > 0; (n >>= 1) && (str += str)) if (n & 1) r += str;

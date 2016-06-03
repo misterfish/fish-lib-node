@@ -23,22 +23,42 @@ export
     bright-magenta
 
 { curry, values, join, } = require "prelude-ls"
-{ array, } = require './util'
-{ is-obj, } = require './types'
+
+# --- array,
+util = require './util'
+# --- is-obj, is-num,
+types = require './types'
+# --- aerror,
+squeak = require './squeak'
 
 config =
+    cols:
+        red:            31
+        bright-red:     91
+        green:          32
+        bright-green:   92
+        yellow:         33
+        bright-yellow:  93
+        blue:           34
+        bright-blue:    94
+        magenta:        35
+        bright-magenta: 95
+        cyan:           36
+        bright-cyan:    96
+        reset:          0
+
     bullets:
         ghost: '꣐'
         star: '٭'
         bass-clef: '𝄢'
         parallel-lines: '𝄓'
-        segno: '𝄋'
+        #segno: '𝄋'
         ypsili: '𝁐'
         straggismata: '𝁄'
         petasti: '𝁉'
         paraklitiki: '𝀉'
         dipli: '𝀒'
-        satanga: '᳅'
+        #satanga: '᳅'
         bengali: 'ঈ'
 
 our =
@@ -55,12 +75,13 @@ our =
         disable: false
         force: false
 
-# --- must take exactly 2 args (for fancy currying to work right).
+# --- must take exactly 2 args (for currying to work right).
 #
 # so s might be an array.
+
 function color col, s
     if typeof! s is 'Array'
-        [str, opt] = s
+        [ str, opt, ] = s
     else
         str = s
         opt = {}
@@ -70,7 +91,7 @@ function color col, s
     if not is-tty() and not our.colors.force
         return str
 
-    join '' array do
+    join '' util.array do
         _color col, opt
         str
         _color 'reset', opt
@@ -78,34 +99,17 @@ function color col, s
 function colored the-color
     (curry color) the-color
 
-function _color c, { warn-on-error } = {}
-    # --- set warn-on-error to false to avoid infinite loop if calling from
-    # within iwarn.
-    warn-on-error ?= true
-    col = {
-        red:            	31,
-        'bright-red':   	91,
-        green:          	32,
-        'bright-green': 	92,
-        yellow:         	33,
-        'bright-yellow':	93,
-        blue:           	34,
-        'bright-blue':  	94,
-        magenta:        	35,
-        'bright-magenta': 	95,
-        cyan:           	36,
-        'bright-cyan':  	96,
-        reset:          	0,
-    }[c]
+# --- set warn-on-error to false to avoid infinite loop if calling from
+# within iwarn.
 
-    if not col?
-        if warn-on-error then iwarn "Invalid color:" c
+function _color c, { warn-on-error = true, } = {}
+    if not (col = config.cols[c])?
+        iwarn "Invalid color:" c if warn-on-error
         return ''
-
     '[' + col + 'm'
 
-function log ...msg
-    console.log.apply console, msg
+function log
+    console~log ...
 
 # --- return our.bullet.str if it's been set, otherwise a random bullet.
 function bullet
@@ -114,8 +118,8 @@ function bullet
     our.bullet.vals[ Math.floor Math.random() * our.bullet.vals.length ]
 
 function info
-    return unless arguments.length
-    prnt = [].slice.call arguments
+    return unless &.length
+    prnt = [].slice.call &
     ind = ' ' * our.bullet.indent
     spa = ' ' * our.bullet.spacing
     bul = blue bullet()
@@ -124,22 +128,22 @@ function info
     void
 
 function bullet-set arg
-    if is-obj (opts = arg)
+    if types.is-obj (opts = arg)
         if opts.str?
             our.bullet.str = that
         else if opts.type?
             our.bullet.str = config.bullets[that] ? ' '
         if (s = opts.spacing)?
-            return iwarn 'bad spacing' unless is-num s
+            return iwarn 'bad spacing' unless types.is-num s
             our.bullet.spacing = s
         if (s = opts.indent)?
-            return iwarn 'bad indent' unless is-num s
+            return iwarn 'bad indent' unless types.is-num s
             our.bullet.indent = s
     else
         our.bullet.str = arg
 
 function bullet-get val
-    return aerror 'no such bullet property' bright-red val unless our.bullet.has-own-property val
+    squeak.aerror 'no such bullet property' bright-red val unless our.bullet.has-own-property val
 
     our.bullet[val]
 
