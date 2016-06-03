@@ -4,7 +4,7 @@
 # License: GPL 2.0
 # Author: Allen Haim <allen@netherrealm.net>
 
-{ curry, join, last, map, each, compact, keys, values } = require "prelude-ls"
+{ curry, join, last, map, each, compact, keys, values, } = require "prelude-ls"
 sprintf = require 'sprintf'
 
 { sys-get, sys-set, sys-ok, sys-exec, sys-spawn, sys, shell-quote, } = sys-mod = require './sys'
@@ -41,6 +41,7 @@ function import-all target
 # e.g.
 # import-kind 'all'
 # import-kind <[ squeak color ]>
+
 function import-kind target, ...kinds
     doit = (kind) ->
         identifiers = Identifier[kind]
