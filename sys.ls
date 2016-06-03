@@ -953,32 +953,38 @@ function sys-process-args ...args-array
         return aerror() unless is-func oncomplete
         opts.cmd = cmd
         opts.oncomplete = oncomplete
-    # --- 10 + 11.
-    else if num-args >= 3 and is-str args-array.1
-        oncomplete = args-array.pop()
-        return aerror() unless is-func oncomplete
+    # --- 10, 11, 12, 13.
+    else if num-args >= 2 and is-str args-array.1
         last-arg = args-array.pop()
+        # --- 10, 11.
+        if is-func last-arg
+            oncomplete = last-arg
+            last-arg2 = args-array.pop()
 
-        # --- 11.
-        if is-obj last-arg
-            opts = last-arg
-        # --- 10.
+            # --- 11.
+            if is-obj last-arg2
+                opts = last-arg2
+            # --- 10.
+            else
+                args-array.push last-arg2
+                opts = {}
+            [ cmd, ...args ] = args-array
+            opts <<< { cmd, args, oncomplete, }
+
+        # --- 12, 13.
         else
             args-array.push last-arg
-            opts = {}
-        [ cmd, ...args ] = args-array
-        opts <<< { cmd, args, oncomplete, }
-    # 12
-    else if num-args >= 2 and is-str args-array.1
-        [ cmd, ...args ] = args-array
-        opts = { cmd, args }
-    # 13
-    else if num-args >= 3 and is-str args-array.1
-        opts = args-array.pop()
-        return aerror() unless is-obj opts
-        [ cmd, ...cmd-args ] = args-array
-        opts.cmd = cmd
-        opts.args = cmd-args
+            last-arg2 = args-array.pop()
+
+            # --- 13.
+            if is-obj last-arg2
+                opts = last-arg2
+            # --- 12.
+            else
+                args-array.push last-arg2
+                opts = {}
+            [ cmd, ...args ] = args-array
+            opts <<< { cmd, args, }
     else
         return aerror()
 

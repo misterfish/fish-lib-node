@@ -642,7 +642,7 @@ function syserror(arg$){
   }
 }
 function sysProcessArgs(){
-  var argsArray, type, numArgs, opts, cmd, args, oncomplete, lastArg, cmdArgs, x$;
+  var argsArray, type, numArgs, opts, cmd, args, oncomplete, lastArg, lastArg2, x$;
   argsArray = slice$.call(arguments);
   type = argsArray.shift();
   if (type !== 'exec' && type !== 'spawn') {
@@ -703,36 +703,34 @@ function sysProcessArgs(){
     }
     opts.cmd = cmd;
     opts.oncomplete = oncomplete;
-  } else if (numArgs >= 3 && isStr(argsArray[1])) {
-    oncomplete = argsArray.pop();
-    if (!isFunc(oncomplete)) {
-      return aerror();
-    }
+  } else if (numArgs >= 2 && isStr(argsArray[1])) {
     lastArg = argsArray.pop();
-    if (isObj(lastArg)) {
-      opts = lastArg;
+    if (isFunc(lastArg)) {
+      oncomplete = lastArg;
+      lastArg2 = argsArray.pop();
+      if (isObj(lastArg2)) {
+        opts = lastArg2;
+      } else {
+        argsArray.push(lastArg2);
+        opts = {};
+      }
+      cmd = argsArray[0], args = slice$.call(argsArray, 1);
+      opts.cmd = cmd;
+      opts.args = args;
+      opts.oncomplete = oncomplete;
     } else {
       argsArray.push(lastArg);
-      opts = {};
+      lastArg2 = argsArray.pop();
+      if (isObj(lastArg2)) {
+        opts = lastArg2;
+      } else {
+        argsArray.push(lastArg2);
+        opts = {};
+      }
+      cmd = argsArray[0], args = slice$.call(argsArray, 1);
+      opts.cmd = cmd;
+      opts.args = args;
     }
-    cmd = argsArray[0], args = slice$.call(argsArray, 1);
-    opts.cmd = cmd;
-    opts.args = args;
-    opts.oncomplete = oncomplete;
-  } else if (numArgs >= 2 && isStr(argsArray[1])) {
-    cmd = argsArray[0], args = slice$.call(argsArray, 1);
-    opts = {
-      cmd: cmd,
-      args: args
-    };
-  } else if (numArgs >= 3 && isStr(argsArray[1])) {
-    opts = argsArray.pop();
-    if (!isObj(opts)) {
-      return aerror();
-    }
-    cmd = argsArray[0], cmdArgs = slice$.call(argsArray, 1);
-    opts.cmd = cmd;
-    opts.args = cmdArgs;
   } else {
     return aerror();
   }
