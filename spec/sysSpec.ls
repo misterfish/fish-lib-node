@@ -205,3 +205,20 @@ describe 'Sys' ->
                     expect out.trim() .to-equal '12'
                     expect process.stdout.write .to-have-been-called()
 
+        test 'usage 12' ->
+            { out, ok, code, signal, stdout, stderr, } = tgt.sys-exec do
+                'ls' '-Q'
+                sprintf '"%s"/*.txt' our.dir.test
+                '|' 'xargs' 'cat' '|' 'wc' '-w'
+            expect out.trim() .to-equal '12'
+            expect process.stdout.write .not.to-have-been-called()
+
+        test 'usage 13' ->
+            { out, ok, code, signal, stdout, stderr, } = tgt.sys-exec do
+                'ls' '-Q'
+                sprintf '"%s"/*.txt' our.dir.test
+                '|' 'xargs' 'cat' '|' 'wc' '-w'
+                verbose: true
+            expect out.trim() .to-equal '12'
+            expect process.stdout.write .to-have-been-called()
+

@@ -227,7 +227,7 @@ describe('Sys', function(){
         return expect(process.stdout.write).not.toHaveBeenCalled();
       });
     });
-    return test('usage 11', function(){
+    test('usage 11', function(){
       return tgt.sysExec('ls', '-Q', sprintf('"%s"/*.txt', our.dir.test), '|', 'xargs', 'cat', '|', 'wc', '-w', {
         verbose: true
       }, function(arg$){
@@ -236,6 +236,20 @@ describe('Sys', function(){
         expect(out.trim()).toEqual('12');
         return expect(process.stdout.write).toHaveBeenCalled();
       });
+    });
+    test('usage 12', function(){
+      var ref$, out, ok, code, signal, stdout, stderr;
+      ref$ = tgt.sysExec('ls', '-Q', sprintf('"%s"/*.txt', our.dir.test), '|', 'xargs', 'cat', '|', 'wc', '-w'), out = ref$.out, ok = ref$.ok, code = ref$.code, signal = ref$.signal, stdout = ref$.stdout, stderr = ref$.stderr;
+      expect(out.trim()).toEqual('12');
+      return expect(process.stdout.write).not.toHaveBeenCalled();
+    });
+    return test('usage 13', function(){
+      var ref$, out, ok, code, signal, stdout, stderr;
+      ref$ = tgt.sysExec('ls', '-Q', sprintf('"%s"/*.txt', our.dir.test), '|', 'xargs', 'cat', '|', 'wc', '-w', {
+        verbose: true
+      }), out = ref$.out, ok = ref$.ok, code = ref$.code, signal = ref$.signal, stdout = ref$.stdout, stderr = ref$.stderr;
+      expect(out.trim()).toEqual('12');
+      return expect(process.stdout.write).toHaveBeenCalled();
     });
   });
 });
