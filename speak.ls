@@ -52,13 +52,11 @@ config =
         star: '٭'
         bass-clef: '𝄢'
         parallel-lines: '𝄓'
-        #segno: '𝄋'
         ypsili: '𝁐'
         straggismata: '𝁄'
         petasti: '𝁉'
         paraklitiki: '𝀉'
         dipli: '𝀒'
-        #satanga: '᳅'
         bengali: 'ঈ'
 
 our =
