@@ -224,6 +224,9 @@ function pcomplain opts
 
     print-file-and-line = false
 
+    error-type = 'fatal' unless error-type in <[ fatal allow throw ]>
+    api-error-type = 'fatal' unless api-error-type in <[ fatal allow throw ]>
+
     if type is 'aerror'
         msg-main.push "bad call." unless msg-main.length
         msg-begin.push "Api error:"

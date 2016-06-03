@@ -1,4 +1,4 @@
-var ref$, last, join, map, types, speak, util, nodeUtil, our, out$ = typeof exports != 'undefined' && exports || this;
+var ref$, last, join, map, types, speak, util, nodeUtil, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
 out$.init = init;
 out$.squeakSet = squeakSet;
 out$.icomplain = icomplain;
@@ -25,12 +25,8 @@ our = {
   }
 };
 function icomplain(){
-  var msg, res$, i$, to$, opts, func;
-  res$ = [];
-  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
-    res$.push(arguments[i$]);
-  }
-  msg = res$;
+  var msg, opts, func;
+  msg = slice$.call(arguments);
   opts = last(msg);
   if (types.isObj(opts)) {
     msg.pop();
@@ -43,12 +39,8 @@ function icomplain(){
   return func.apply(null, msg.concat([opts]));
 }
 function complain(){
-  var msg, res$, i$, to$, opts, func;
-  res$ = [];
-  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
-    res$.push(arguments[i$]);
-  }
-  msg = res$;
+  var msg, opts, func;
+  msg = slice$.call(arguments);
   opts = last(msg);
   if (types.isObj(opts)) {
     msg.pop();
@@ -61,12 +53,8 @@ function complain(){
   return func.apply(null, msg.concat([opts]));
 }
 function iwarn(){
-  var args, res$, i$, to$, opts;
-  res$ = [];
-  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
-    res$.push(arguments[i$]);
-  }
-  args = res$;
+  var args, opts;
+  args = slice$.call(arguments);
   opts = last(args);
   if (types.isObj(opts)) {
     args.pop();
@@ -76,12 +64,8 @@ function iwarn(){
   return pcomplain((opts.msg = args, opts.type = 'iwarn', opts.internal = true, opts));
 }
 function ierror(){
-  var args, res$, i$, to$, opts;
-  res$ = [];
-  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
-    res$.push(arguments[i$]);
-  }
-  args = res$;
+  var args, opts;
+  args = slice$.call(arguments);
   opts = last(args);
   if (types.isObj(opts)) {
     args.pop();
@@ -91,12 +75,8 @@ function ierror(){
   return pcomplain((opts.msg = args, opts.type = 'ierror', opts.internal = true, opts));
 }
 function warn(){
-  var args, res$, i$, to$, opts;
-  res$ = [];
-  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
-    res$.push(arguments[i$]);
-  }
-  args = res$;
+  var args, opts;
+  args = slice$.call(arguments);
   opts = last(args);
   if (types.isObj(opts)) {
     args.pop();
@@ -106,12 +86,8 @@ function warn(){
   return pcomplain((opts.msg = args, opts.type = 'warn', opts.internal = false, opts));
 }
 function error(){
-  var args, res$, i$, to$, opts;
-  res$ = [];
-  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
-    res$.push(arguments[i$]);
-  }
-  args = res$;
+  var args, opts;
+  args = slice$.call(arguments);
   opts = last(args);
   if (types.isObj(opts)) {
     args.pop();
@@ -121,12 +97,8 @@ function error(){
   return pcomplain((opts.msg = args, opts.type = 'error', opts.internal = false, opts));
 }
 function aerror(){
-  var args, res$, i$, to$, opts;
-  res$ = [];
-  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
-    res$.push(arguments[i$]);
-  }
-  args = res$;
+  var args, opts;
+  args = slice$.call(arguments);
   opts = last(args);
   if (types.isObj(opts)) {
     args.pop();
@@ -200,6 +172,12 @@ function pcomplain(opts){
   msgMain = msg;
   msgEnd = [];
   printFileAndLine = false;
+  if (errorType !== 'fatal' && errorType !== 'allow' && errorType !== 'throw') {
+    errorType = 'fatal';
+  }
+  if (apiErrorType !== 'fatal' && apiErrorType !== 'allow' && apiErrorType !== 'throw') {
+    apiErrorType = 'fatal';
+  }
   if (type === 'aerror') {
     if (!msgMain.length) {
       msgMain.push("bad call.");
