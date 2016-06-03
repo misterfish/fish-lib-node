@@ -1,2 +1,3 @@
 # fish-lib-node
-Useful stuff for working with node.js.
+
+Utility library for system calls, types, utilities, errors and logging for Node.js ninjas.
