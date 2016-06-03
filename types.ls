@@ -19,43 +19,55 @@
 # --- ok-number provides more detailed information for inspecting the input
 # (see ok-number()).
 
-export
-    of-number
-    of-object
+# iwarn,
+squeak = require './squeak'
+# bright-red,
+speak = require './speak'
 
-    ok-number
+our =
+    type-check:
+        n:      isNumber
+        ns:     isNumberStrict
+        i:      isInteger
+        is:     isIntegerStrict
+        ip:     isIntegerPositive
+        ips:    isIntegerPositiveStrict
+        iN:     isIntegerNonNegative
+        iNs:    isIntegerNonNegativeStrict
+        s:      isString
+        o:      isObject
+        a:      isArray
+        f:      isFunction
 
-    is-array
-    is-object
-    is-string
-    is-boolean
-    is-function
-    is-integer
-    is-integer-strict
-    is-number
-    is-number-strict
-    is-integer-positive
-    is-integer-non-negative
-    is-buffer
+# --- useful for argument checking.
+#
+# ok it # => not null and not undef.
+# ok it, spec # => check the type of the arg.
+#
+#     spec:
+#
+#        'n'    => is-number
+#        'ns'   => is-number-strict
+#        'i'    => is-integer
+#        'is'   => is-integer-strict
+#        'ip'   => is-integer-positive
+#        'ips'  => is-integer-positive-strict
+#        'iN'   => is-integer-non-negative
+#        'iNs'  => is-integer-non-negative-strict
+#        's'    => is-string
+#        'o'    => is-object
+#        'a'    => is-array
+#        'f'    => is-function
 
-    # --- aliases
-    of-num
-    of-obj
+function ok n, spec
+    return false unless n?
+    return true unless spec?
+    func = our.type-check[spec]
+    return squeak.iwarn 'bad spec' speak.bright-red spec unless func
+    func.call null n
 
-    ok-num
-
-    is-arr
-    is-obj
-    is-str
-    is-bool
-    is-func
-    is-int
-    is-int-strict
-    is-num
-    is-num-strict
-    is-int-pos
-    is-int-non-neg
-    is-buf
+function defined n
+    n?
 
 # ------ checks if the input is of type 'number'.
 #
@@ -88,7 +100,7 @@ function ok-number
     nan: nan
     infinity: infinity
     is-of-num: is-of-num
-    ok: of-num and !nan and !infinity
+    ok: is-of-num and !nan and !infinity
 
 # ------ checks if the input is a real number or a string pretending to be
 # one.
@@ -141,8 +153,14 @@ function is-integer-strict
 function is-integer-positive
     is-int it and (it > 0)
 
+function is-integer-positive-strict
+    is-int-strict it and (it > 0)
+
 function is-integer-non-negative
     is-int it and (it >= 0)
+
+function is-integer-non-negative-strict
+    is-int-strict it and (it >= 0)
 
 # ------ checks if the input is a Buffer.
 function is-buffer
@@ -169,33 +187,64 @@ function is-integer-priv n, { strict } = {}
 
 # --- aliases
 
-function of-num
-    of-number ...
-function of-obj
-    of-object ...
-function ok-num
-    ok-number ...
-function is-num
-    is-number ...
-function is-num-strict
-    is-number-strict ...
-function is-obj
-    is-object ...
-function is-str
-    is-string ...
-function is-bool
-    is-boolean ...
-function is-func
-    is-function ...
-function is-arr
-    is-array ...
-function is-int
-    is-integer ...
-function is-int-strict
-    is-integer-strict ...
-function is-buf
-    is-buffer ...
-function is-int-pos
-    is-integer-positive ...
-function is-int-non-neg
-    is-integer-non-negative ...
+of-num = of-number
+of-obj = of-object
+ok-num = ok-number
+is-num = is-number
+is-num-strict = is-number-strict
+is-obj = is-object
+is-str = is-string
+is-bool = is-boolean
+is-func = is-function
+is-arr = is-array
+is-int = is-integer
+is-int-strict = is-integer-strict
+is-buf = is-buffer
+is-int-pos = is-integer-positive
+is-int-pos-strict = is-integer-positive-strict
+is-int-non-neg = is-integer-non-negative
+is-int-non-neg-strict = is-integer-non-negative-strict
+
+export
+    ok
+    defined
+    of-number
+    of-object
+
+    ok-number
+
+    is-array
+    is-object
+    is-string
+    is-boolean
+    is-function
+    is-integer
+    is-integer-strict
+    is-number
+    is-number-strict
+    is-integer-positive
+    is-integer-positive-strict
+    is-integer-non-negative
+    is-integer-non-negative-strict
+    is-buffer
+
+    # --- aliases
+    of-num
+    of-obj
+
+    ok-num
+
+    is-arr
+    is-obj
+    is-str
+    is-bool
+    is-func
+    is-int
+    is-int-strict
+    is-num
+    is-num-strict
+    is-int-pos
+    is-int-pos-strict
+    is-int-non-neg
+    is-int-non-neg-strict
+    is-buf

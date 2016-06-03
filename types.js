@@ -1,34 +1,39 @@
-var out$ = typeof exports != 'undefined' && exports || this, toString$ = {}.toString;
-out$.ofNumber = ofNumber;
-out$.ofObject = ofObject;
-out$.okNumber = okNumber;
-out$.isArray = isArray;
-out$.isObject = isObject;
-out$.isString = isString;
-out$.isBoolean = isBoolean;
-out$.isFunction = isFunction;
-out$.isInteger = isInteger;
-out$.isIntegerStrict = isIntegerStrict;
-out$.isNumber = isNumber;
-out$.isNumberStrict = isNumberStrict;
-out$.isIntegerPositive = isIntegerPositive;
-out$.isIntegerNonNegative = isIntegerNonNegative;
-out$.isBuffer = isBuffer;
-out$.ofNum = ofNum;
-out$.ofObj = ofObj;
-out$.okNum = okNum;
-out$.isArr = isArr;
-out$.isObj = isObj;
-out$.isStr = isStr;
-out$.isBool = isBool;
-out$.isFunc = isFunc;
-out$.isInt = isInt;
-out$.isIntStrict = isIntStrict;
-out$.isNum = isNum;
-out$.isNumStrict = isNumStrict;
-out$.isIntPos = isIntPos;
-out$.isIntNonNeg = isIntNonNeg;
-out$.isBuf = isBuf;
+var squeak, speak, our, ofNum, ofObj, okNum, isNum, isNumStrict, isObj, isStr, isBool, isFunc, isArr, isInt, isIntStrict, isBuf, isIntPos, isIntPosStrict, isIntNonNeg, isIntNonNegStrict, toString$ = {}.toString, out$ = typeof exports != 'undefined' && exports || this;
+squeak = require('./squeak');
+speak = require('./speak');
+our = {
+  typeCheck: {
+    n: isNumber,
+    ns: isNumberStrict,
+    i: isInteger,
+    is: isIntegerStrict,
+    ip: isIntegerPositive,
+    ips: isIntegerPositiveStrict,
+    iN: isIntegerNonNegative,
+    iNs: isIntegerNonNegativeStrict,
+    s: isString,
+    o: isObject,
+    a: isArray,
+    f: isFunction
+  }
+};
+function ok(n, spec){
+  var func;
+  if (n == null) {
+    return false;
+  }
+  if (spec == null) {
+    return true;
+  }
+  func = our.typeCheck[spec];
+  if (!func) {
+    return squeak.iwarn('bad spec', speak.brightRed(spec));
+  }
+  return func.call(null, n);
+}
+function defined(n){
+  return n != null;
+}
 function ofNumber(it){
   return toString$.call(it).slice(8, -1) === 'Number';
 }
@@ -44,7 +49,7 @@ function okNumber(it){
     nan: nan,
     infinity: infinity,
     isOfNum: isOfNum,
-    ok: ofNum && !nan && !infinity
+    ok: isOfNum && !nan && !infinity
   };
 }
 function isNumber(it){
@@ -85,8 +90,14 @@ function isIntegerStrict(it){
 function isIntegerPositive(it){
   return isInt(it) && it > 0;
 }
+function isIntegerPositiveStrict(it){
+  return isIntStrict(it) && it > 0;
+}
 function isIntegerNonNegative(it){
   return isInt(it) && it >= 0;
+}
+function isIntegerNonNegativeStrict(it){
+  return isIntStrict(it) && it >= 0;
 }
 function isBuffer(){
   return Buffer.isBuffer.apply(this, arguments);
@@ -119,48 +130,56 @@ function isIntegerPriv(n, arg$){
   }
   return okNumber(n).ok && n === Math.floor(n);
 }
-function ofNum(){
-  return ofNumber.apply(this, arguments);
-}
-function ofObj(){
-  return ofObject.apply(this, arguments);
-}
-function okNum(){
-  return okNumber.apply(this, arguments);
-}
-function isNum(){
-  return isNumber.apply(this, arguments);
-}
-function isNumStrict(){
-  return isNumberStrict.apply(this, arguments);
-}
-function isObj(){
-  return isObject.apply(this, arguments);
-}
-function isStr(){
-  return isString.apply(this, arguments);
-}
-function isBool(){
-  return isBoolean.apply(this, arguments);
-}
-function isFunc(){
-  return isFunction.apply(this, arguments);
-}
-function isArr(){
-  return isArray.apply(this, arguments);
-}
-function isInt(){
-  return isInteger.apply(this, arguments);
-}
-function isIntStrict(){
-  return isIntegerStrict.apply(this, arguments);
-}
-function isBuf(){
-  return isBuffer.apply(this, arguments);
-}
-function isIntPos(){
-  return isIntegerPositive.apply(this, arguments);
-}
-function isIntNonNeg(){
-  return isIntegerNonNegative.apply(this, arguments);
-}
+ofNum = ofNumber;
+ofObj = ofObject;
+okNum = okNumber;
+isNum = isNumber;
+isNumStrict = isNumberStrict;
+isObj = isObject;
+isStr = isString;
+isBool = isBoolean;
+isFunc = isFunction;
+isArr = isArray;
+isInt = isInteger;
+isIntStrict = isIntegerStrict;
+isBuf = isBuffer;
+isIntPos = isIntegerPositive;
+isIntPosStrict = isIntegerPositiveStrict;
+isIntNonNeg = isIntegerNonNegative;
+isIntNonNegStrict = isIntegerNonNegativeStrict;
+out$.ok = ok;
+out$.defined = defined;
+out$.ofNumber = ofNumber;
+out$.ofObject = ofObject;
+out$.okNumber = okNumber;
+out$.isArray = isArray;
+out$.isObject = isObject;
+out$.isString = isString;
+out$.isBoolean = isBoolean;
+out$.isFunction = isFunction;
+out$.isInteger = isInteger;
+out$.isIntegerStrict = isIntegerStrict;
+out$.isNumber = isNumber;
+out$.isNumberStrict = isNumberStrict;
+out$.isIntegerPositive = isIntegerPositive;
+out$.isIntegerPositiveStrict = isIntegerPositiveStrict;
+out$.isIntegerNonNegative = isIntegerNonNegative;
+out$.isIntegerNonNegativeStrict = isIntegerNonNegativeStrict;
+out$.isBuffer = isBuffer;
+out$.ofNum = ofNum;
+out$.ofObj = ofObj;
+out$.okNum = okNum;
+out$.isArr = isArr;
+out$.isObj = isObj;
+out$.isStr = isStr;
+out$.isBool = isBool;
+out$.isFunc = isFunc;
+out$.isInt = isInt;
+out$.isIntStrict = isIntStrict;
+out$.isNum = isNum;
+out$.isNumStrict = isNumStrict;
+out$.isIntPos = isIntPos;
+out$.isIntPosStrict = isIntPosStrict;
+out$.isIntNonNeg = isIntNonNeg;
+out$.isIntNonNegStrict = isIntNonNegStrict;
+out$.isBuf = isBuf;
