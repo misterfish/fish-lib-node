@@ -289,7 +289,7 @@ function sys-get key
 # the characters.
 
 function shell-quote arg
-    if arg == // [ ! $ & * ? ( ) ` < > | \s ] //
+    if arg == // [ ; ! $ & * ? ( ) ` < > | \s ] //
         arg .= replace // ' //g, "'\\''"
         return "'#arg'"
     arg
@@ -480,24 +480,24 @@ function sysdo-exec-sync opts
 function sysdo-exec-async opts
 
     {
-        cmd,
-        oncomplete,
-        args = [],
+        cmd
+        oncomplete
+        args = []
 
-        die = our.opts.die,
-        verbose = our.opts.verbose,
-        quiet = our.opts.quiet,
-        quiet-on-exit = our.opts.quiet-on-exit,
-        quiet-node-err = our.opts.quiet-node-err,
-        sync = our.opts.sync,
-        out-print = our.opts.out-print,
-        err-print = our.opts.err-print,
-        out-split = our.opts.out-split,
-        err-split = our.opts.err-split,
-        out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element,
-        err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element,
+        die = our.opts.die
+        verbose = our.opts.verbose
+        quiet = our.opts.quiet
+        quiet-on-exit = our.opts.quiet-on-exit
+        quiet-node-err = our.opts.quiet-node-err
+        sync = our.opts.sync
+        out-print = our.opts.out-print
+        err-print = our.opts.err-print
+        out-split = our.opts.out-split
+        err-split = our.opts.err-split
+        out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element
+        err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element
 
-        invocation-opts,
+        invocation-opts
 
     } = opts
 
@@ -967,14 +967,14 @@ function sys-process-args ...args-array
         last-arg = args-array.pop()
 
         # --- 11.
-        if is-obj (opts = last-arg)
-            [ cmd, ...args ] = args-array
-
+        if is-obj last-arg
+            opts = last-arg
         # --- 10.
         else
             args-array.push last-arg
             opts = {}
-        opts = { cmd, args, oncomplete, }
+        [ cmd, ...args ] = args-array
+        opts <<< { cmd, args, oncomplete, }
     # 12
     else if num-args >= 2 and is-str args-array.1
         [ cmd, ...args ] = args-array

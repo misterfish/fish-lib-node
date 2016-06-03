@@ -709,17 +709,16 @@ function sysProcessArgs(){
       return aerror();
     }
     lastArg = argsArray.pop();
-    if (isObj(opts = lastArg)) {
-      cmd = argsArray[0], args = slice$.call(argsArray, 1);
+    if (isObj(lastArg)) {
+      opts = lastArg;
     } else {
       argsArray.push(lastArg);
       opts = {};
     }
-    opts = {
-      cmd: cmd,
-      args: args,
-      oncomplete: oncomplete
-    };
+    cmd = argsArray[0], args = slice$.call(argsArray, 1);
+    opts.cmd = cmd;
+    opts.args = args;
+    opts.oncomplete = oncomplete;
   } else if (numArgs >= 2 && isStr(argsArray[1])) {
     cmd = argsArray[0], args = slice$.call(argsArray, 1);
     opts = {
