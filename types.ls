@@ -19,9 +19,9 @@
 # --- ok-number provides more detailed information for inspecting the input
 # (see ok-number()).
 
-# iwarn,
+# --- iwarn,
 squeak = require './squeak'
-# bright-red,
+# --- bright-red,
 speak = require './speak'
 
 our =
