@@ -2,7 +2,7 @@ var test, xtest, our;
 test = global.it;
 xtest = global.xit;
 our = {
-  target: require('../squeak')
+  target: require('../index')
 };
 test = global.it;
 xtest = global.xit;
