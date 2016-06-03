@@ -12,7 +12,7 @@ sprintf = require 'sprintf'
 
 { squeak-set, squeak-get, icomplain, complain, iwarn, ierror, warn, error, aerror, } = squeak = require './squeak'
 
-{ of-number, of-object, ok-number, is-array, is-object, is-string, is-boolean, is-function, is-integer, is-integer-strict, is-number, is-number-strict, is-integer-positive, is-integer-non-negative, is-buffer, of-num, of-obj, ok-num, is-arr, is-obj, is-str, is-bool, is-func, is-int, is-int-strict, is-num, is-num-strict, is-int-pos, is-int-non-neg, is-buf, } = types = require './types'
+{ ok, defined, of-number, of-object, ok-number, is-array, is-object, is-string, is-boolean, is-function, is-integer, is-integer-strict, is-number, is-number-strict, is-integer-positive, is-integer-positive-strict, is-integer-non-negative, is-integer-non-negative-strict, is-buffer, of-num, of-obj, ok-num, is-arr, is-obj, is-str, is-bool, is-func, is-int, is-int-strict, is-num, is-num-strict, is-int-pos, is-int-pos-strict, is-int-non-neg, is-int-non-neg-strict, is-buf, } = types = require './types'
 
 { shuffle-array, merge-objects, ord, chr, range, times, array, to-array, flat-array, } = util = require './util'
 
@@ -92,7 +92,7 @@ Identifier.color = {
 }
 
 Identifier.types = {
-    of-number, of-object, ok-number, is-array, is-object, is-string, is-boolean, is-function, is-integer, is-integer-strict, is-number, is-number-strict, is-integer-positive, is-integer-non-negative, is-buffer, of-num, of-obj, ok-num, is-arr, is-obj, is-str, is-bool, is-func, is-int, is-int-strict, is-num, is-num-strict, is-int-pos, is-int-non-neg, is-buf,
+    ok, defined, of-number, of-object, ok-number, is-array, is-object, is-string, is-boolean, is-function, is-integer, is-integer-strict, is-number, is-number-strict, is-integer-positive, is-integer-positive-strict, is-integer-non-negative, is-integer-non-negative-strict, is-buffer, of-num, of-obj, ok-num, is-arr, is-obj, is-str, is-bool, is-func, is-int, is-int-strict, is-num, is-num-strict, is-int-pos, is-int-pos-strict, is-int-non-neg, is-int-non-neg-strict, is-buf,
 }
 
 Identifier.sys = {
