@@ -89,7 +89,7 @@ function _color(c, arg$){
     : {}).warnOnError) != null ? ref$ : true;
   if ((col = config.cols[c]) == null) {
     if (warnOnError) {
-      iwarn("Invalid color:", c);
+      squeak.iwarn("Invalid color:", c);
     }
     return '';
   }
@@ -130,13 +130,13 @@ function bulletSet(arg){
     }
     if ((s = opts.spacing) != null) {
       if (!types.isNum(s)) {
-        return iwarn('bad spacing');
+        return squeak.iwarn('bad spacing');
       }
       our.bullet.spacing = s;
     }
     if ((s = opts.indent) != null) {
       if (!types.isNum(s)) {
-        return iwarn('bad indent');
+        return squeak.iwarn('bad indent');
       }
       return our.bullet.indent = s;
     }

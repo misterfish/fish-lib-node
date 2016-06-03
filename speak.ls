@@ -28,7 +28,7 @@ export
 util = require './util'
 # --- is-obj, is-num,
 types = require './types'
-# --- aerror,
+# --- aerror, iwarn,
 squeak = require './squeak'
 
 config =
@@ -104,7 +104,7 @@ function colored the-color
 
 function _color c, { warn-on-error = true, } = {}
     if not (col = config.cols[c])?
-        iwarn "Invalid color:" c if warn-on-error
+        squeak.iwarn "Invalid color:" c if warn-on-error
         return ''
     '[' + col + 'm'
 
@@ -134,10 +134,10 @@ function bullet-set arg
         else if opts.type?
             our.bullet.str = config.bullets[that] ? ' '
         if (s = opts.spacing)?
-            return iwarn 'bad spacing' unless types.is-num s
+            return squeak.iwarn 'bad spacing' unless types.is-num s
             our.bullet.spacing = s
         if (s = opts.indent)?
-            return iwarn 'bad indent' unless types.is-num s
+            return squeak.iwarn 'bad indent' unless types.is-num s
             our.bullet.indent = s
     else
         our.bullet.str = arg
