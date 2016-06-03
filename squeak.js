@@ -1,4 +1,4 @@
-var ref$, last, join, map, isObj, isArr, bullet, bulletGet, green, brightRed, yellow, red, array, util, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
+var ref$, last, join, map, types, bullet, bulletGet, green, brightRed, yellow, red, array, util, our, out$ = typeof exports != 'undefined' && exports || this;
 out$.init = init;
 out$.squeakSet = squeakSet;
 out$.icomplain = icomplain;
@@ -9,7 +9,7 @@ out$.warn = warn;
 out$.error = error;
 out$.aerror = aerror;
 ref$ = require("prelude-ls"), last = ref$.last, join = ref$.join, map = ref$.map;
-ref$ = require('./types'), isObj = ref$.isObj, isArr = ref$.isArr;
+types = require('./types');
 ref$ = require('./speak'), bullet = ref$.bullet, bulletGet = ref$.bulletGet, green = ref$.green, brightRed = ref$.brightRed, yellow = ref$.yellow, red = ref$.red;
 array = require('./util').array;
 util = void 8;
@@ -25,10 +25,14 @@ our = {
   }
 };
 function icomplain(){
-  var msg, opts, func;
-  msg = slice$.call(arguments);
+  var msg, res$, i$, to$, opts, func;
+  res$ = [];
+  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  msg = res$;
   opts = last(msg);
-  if (isObj(opts)) {
+  if (types.isObj(opts)) {
     msg.pop();
   } else {
     opts = {};
@@ -39,10 +43,14 @@ function icomplain(){
   return func.apply(null, msg.concat([opts]));
 }
 function complain(){
-  var msg, opts, func;
-  msg = slice$.call(arguments);
+  var msg, res$, i$, to$, opts, func;
+  res$ = [];
+  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  msg = res$;
   opts = last(msg);
-  if (isObj(opts)) {
+  if (types.isObj(opts)) {
     msg.pop();
   } else {
     opts = {};
@@ -53,10 +61,14 @@ function complain(){
   return func.apply(null, msg.concat([opts]));
 }
 function iwarn(){
-  var msg, opts;
-  msg = slice$.call(arguments);
+  var msg, res$, i$, to$, opts;
+  res$ = [];
+  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  msg = res$;
   opts = last(msg);
-  if (isObj(opts)) {
+  if (types.isObj(opts)) {
     msg.pop();
   } else {
     opts = {};
@@ -64,10 +76,14 @@ function iwarn(){
   return pcomplain((opts.msg = msg, opts.type = 'iwarn', opts.internal = true, opts));
 }
 function ierror(){
-  var msg, opts;
-  msg = slice$.call(arguments);
+  var msg, res$, i$, to$, opts;
+  res$ = [];
+  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  msg = res$;
   opts = last(msg);
-  if (isObj(opts)) {
+  if (types.isObj(opts)) {
     msg.pop();
   } else {
     opts = {};
@@ -75,10 +91,14 @@ function ierror(){
   return pcomplain((opts.msg = msg, opts.type = 'ierror', opts.internal = true, opts));
 }
 function warn(){
-  var msg, opts;
-  msg = slice$.call(arguments);
+  var msg, res$, i$, to$, opts;
+  res$ = [];
+  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  msg = res$;
   opts = last(msg);
-  if (isObj(opts)) {
+  if (types.isObj(opts)) {
     msg.pop();
   } else {
     opts = {};
@@ -86,10 +106,14 @@ function warn(){
   return pcomplain((opts.msg = msg, opts.type = 'warn', opts.internal = false, opts));
 }
 function error(){
-  var msg, opts;
-  msg = slice$.call(arguments);
+  var msg, res$, i$, to$, opts;
+  res$ = [];
+  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  msg = res$;
   opts = last(msg);
-  if (isObj(opts)) {
+  if (types.isObj(opts)) {
     msg.pop();
   } else {
     opts = {};
@@ -97,10 +121,14 @@ function error(){
   return pcomplain((opts.msg = msg, opts.type = 'error', opts.internal = false, opts));
 }
 function aerror(){
-  var msg, opts;
-  msg = slice$.call(arguments);
+  var msg, res$, i$, to$, opts;
+  res$ = [];
+  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  msg = res$;
   opts = last(msg);
-  if (isObj(opts)) {
+  if (types.isObj(opts)) {
     msg.pop();
   } else {
     opts = {};
@@ -158,11 +186,11 @@ function pcomplain(opts){
       }
     };
   }
-  if (!isArr(msg)) {
+  if (!types.isArr(msg)) {
     return iwarn('bad param msg');
   }
   msg = map(function(it){
-    if (isObj(it)) {
+    if (types.isObj(it)) {
       return util.inspect(it);
     } else {
       return it;
@@ -223,7 +251,7 @@ function pcomplain(opts){
   }
   if (throws) {
     yellow = green = brightRed = red = function(it){
-      if (isArr(it)) {
+      if (types.isArr(it)) {
         return it[0];
       } else {
         return it;

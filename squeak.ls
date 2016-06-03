@@ -14,9 +14,14 @@ export
 #main = require.main
 #{ } = main.exports
 
-{ is-obj, is-arr, } = require './types'
-{ bullet, bullet-get, green, bright-red, yellow, red, } = require './speak'
-{ array, } = require './util'
+# --- is-obj, is-arr,
+types = require './types'
+
+# --- bullet, bullet-get, green, bright-red, yellow, red,
+speak = require './speak'
+
+# --- array, to-array,
+util = require './util'
 
 # --- lazy loaded module (required when needed).
 #
@@ -83,7 +88,7 @@ our =
 
 function icomplain ...msg
     opts = last msg
-    if is-obj opts then msg.pop() else opts = {}
+    if types.is-obj opts then msg.pop() else opts = {}
     func = if our.opts.complain is 'error' then ierror else iwarn
     opts.stack-rewind ?= 0
     opts.stack-rewind += 2
@@ -97,7 +102,7 @@ function icomplain ...msg
 
 function complain ...msg
     opts = last msg
-    if is-obj opts then msg.pop() else opts = {}
+    if types.is-obj opts then msg.pop() else opts = {}
     func = if our.opts.complain is 'error' then error else warn
     opts.stack-rewind ?= 0
     opts.stack-rewind += 2
@@ -109,7 +114,7 @@ function complain ...msg
 
 function iwarn ...msg
     opts = last msg
-    if is-obj opts then msg.pop() else opts = {}
+    if types.is-obj opts then msg.pop() else opts = {}
 
     pcomplain opts <<<
         msg: msg
@@ -122,7 +127,7 @@ function iwarn ...msg
 
 function ierror ...msg
     opts = last msg
-    if is-obj opts then msg.pop() else opts = {}
+    if types.is-obj opts then msg.pop() else opts = {}
 
     pcomplain opts <<<
         msg: msg
@@ -135,7 +140,7 @@ function ierror ...msg
 
 function warn ...msg
     opts = last msg
-    if is-obj opts then msg.pop() else opts = {}
+    if types.is-obj opts then msg.pop() else opts = {}
 
     pcomplain opts <<<
         msg: msg
@@ -148,7 +153,7 @@ function warn ...msg
 
 function error ...msg
     opts = last msg
-    if is-obj opts then msg.pop() else opts = {}
+    if types.is-obj opts then msg.pop() else opts = {}
 
     pcomplain opts <<<
         msg: msg
@@ -161,7 +166,7 @@ function error ...msg
 
 function aerror ...msg
     opts = last msg
-    if is-obj opts then msg.pop() else opts = {}
+    if types.is-obj opts then msg.pop() else opts = {}
 
     pcomplain opts <<<
         msg: msg
@@ -179,7 +184,7 @@ function squeak-set opts
         name: 'err'
 
 function squeak-get key
-    return complain 'No such key' bright-red key unless our.opts.has-own-property key
+    return complain 'No such key' speak.bright-red key unless our.opts.has-own-property key
     our.opts[key]
 
 # --- all error and warn functions route through this underlying one.
@@ -198,7 +203,7 @@ function pcomplain opts
         util :=
             # just a simple inspector
             inspect: ->
-                to-array arguments
+                util.to-array arguments
                     .map ->
                         if it.to-string?
                             it.to-string()
@@ -207,10 +212,10 @@ function pcomplain opts
                     .join ' '
 
     # --- will call pcomplain() again, but won't infinitely loop.
-    return iwarn 'bad param msg' unless is-arr msg
+    return iwarn 'bad param msg' unless types.is-arr msg
 
     msg = map do
-        -> if is-obj it then util.inspect it else it
+        -> if types.is-obj it then util.inspect it else it
         msg
 
     msg-begin = []
@@ -258,40 +263,40 @@ function pcomplain opts
     print-stack-trace = that if print-stack-trace-opt?
 
     # --- disable colors.
-    if throws then yellow := green := bright-red := red := ->
-        if is-arr it then it.0 else it
+    if throws then speak.yellow := speak.green := speak.bright-red := speak.red := ->
+        if types.is-arr it then it.0 else it
 
     if allow
-        bullet-color = bright-red
+        bullet-color = speak.bright-red
     else
-        bullet-color = red
+        bullet-color = speak.red
 
     if print-stack-trace or print-file-and-line
         [stack, funcname, filename, line-num] = get-stack stack-rewind
 
     # --- msg-begin will be joined on ''.
     msg-begin.unshift do ->
-        ind = ' ' * bullet-get 'indent'
-        spa = ' ' * bullet-get 'spacing'
+        ind = ' ' * speak.bullet-get 'indent'
+        spa = ' ' * speak.bullet-get 'spacing'
 
         # --- -warn-on-error to avoid infinite loop.
-        bul = bullet-color [bullet!, {-warn-on-error}]
+        bul = bullet-color [speak.bullet!, {-warn-on-error}]
 
-        #msg0 = if is-obj msg.0 then util.inspect msg.0 else msg.0
+        #msg0 = if types.is-obj msg.0 then util.inspect msg.0 else msg.0
         ind + bul + spa
 
     # --- (file:line)
     if print-file-and-line
         msg-end.push do
             "(" +
-            "#{yellow [filename, {-warn-on-error}]}" +
+            "#{speak.yellow [filename, {-warn-on-error}]}" +
             (do ->
                 if funcname
                     ":" +
-                    "#{green [funcname, {-warn-on-error}]}"
+                    "#{speak.green [funcname, {-warn-on-error}]}"
                 else '') +
             ":" +
-            "#{bright-red [line-num, {-warn-on-error}]}" +
+            "#{speak.bright-red [line-num, {-warn-on-error}]}" +
             ")"
 
     if print-stack-trace
@@ -307,7 +312,7 @@ function pcomplain opts
     msg-main-str = join ' ' msg-main
     msg-end-str = join ' ' msg-end
 
-    msg-str = join ' ' array do
+    msg-str = join ' ' util.array do
         msg-begin-str
         msg-main-str
         msg-end-str
