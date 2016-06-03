@@ -359,35 +359,17 @@ function sys
 
 function sysdo-exec opts
     {
-        cmd,
-        oncomplete,
-        args = [],
-
-        out-ignore = our.opts.out-ignore,
-        err-ignore = our.opts.err-ignore,
-
-        die = our.opts.die,
-        verbose = our.opts.verbose,
-        quiet = our.opts.quiet,
-        quiet-on-exit = our.opts.quiet-on-exit,
-        sync = our.opts.sync,
-        out-print = our.opts.out-print,
-        err-print = our.opts.err-print,
-        out-split = our.opts.out-split,
-        err-split = our.opts.err-split,
-        out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element,
-        err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element,
-
-        invocation-opts,
-
+        cmd
+        args = []
+        verbose = our.opts.verbose
+        sync = our.opts.sync
     } = opts
 
     # --- we assume the caller has quoted the arguments (or purposely not
     # done so), so we just concatenate.
-    args.unshift cmd
-    cmd = args.join ' '
+    opts.cmd = join ' ' [cmd] ++ args
 
-    log sprintf "%s %s" (green bullet!), cmd if verbose
+    log sprintf "%s %s" (green bullet!), opts.cmd if verbose
 
     if sync
         sysdo-exec-sync opts
@@ -396,28 +378,27 @@ function sysdo-exec opts
 
 function sysdo-exec-sync opts
     {
-        cmd,
-        oncomplete,
-        args = [],
+        cmd
+        oncomplete
+        args = []
 
-        out-ignore = our.opts.out-ignore,
-        err-ignore = our.opts.err-ignore,
+        out-ignore = our.opts.out-ignore
+        err-ignore = our.opts.err-ignore
 
-        die = our.opts.die,
-        verbose = our.opts.verbose,
-        quiet = our.opts.quiet,
-        quiet-on-exit = our.opts.quiet-on-exit,
-        quiet-node-err = our.opts.quiet-node-err,
-        sync = our.opts.sync,
-        out-print = our.opts.out-print,
-        err-print = our.opts.err-print,
-        out-split = our.opts.out-split,
-        err-split = our.opts.err-split,
-        out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element,
-        err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element,
+        die = our.opts.die
+        verbose = our.opts.verbose
+        quiet = our.opts.quiet
+        quiet-on-exit = our.opts.quiet-on-exit
+        quiet-node-err = our.opts.quiet-node-err
+        sync = our.opts.sync
+        out-print = our.opts.out-print
+        err-print = our.opts.err-print
+        out-split = our.opts.out-split
+        err-split = our.opts.err-split
+        out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element
+        err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element
 
-        invocation-opts,
-
+        invocation-opts
     } = opts
 
     # --- so that we control stderr.
@@ -973,28 +954,27 @@ function sys-process-args ...args-array
     else if num-args == 2 and is-func args-array.1
         [ cmd, oncomplete ] = args-array
         opts = { cmd, oncomplete }
-    # 9
+    # --- 9.
     else if num-args == 3 and is-obj args-array.1
         [ cmd, opts, oncomplete ] = args-array
         return aerror() unless is-func oncomplete
         opts.cmd = cmd
         opts.oncomplete = oncomplete
-    # 10
+    # --- 10 + 11.
     else if num-args >= 3 and is-str args-array.1
         oncomplete = args-array.pop()
         return aerror() unless is-func oncomplete
-        [ cmd, ...args ] = args-array
-        opts = { cmd, args, oncomplete }
-    # 11
-    else if num-args >= 4 and is-str args-array.1
-        oncomplete = args-array.pop()
-        return aerror() unless is-func oncomplete
-        opts = args-array.pop()
-        return aerror() unless is-obj opts
-        [ cmd, ...args ] = args-array
-        opts.cmd = cmd
-        opts.args = args
-        opts.oncomplete = oncomplete
+        last-arg = args-array.pop()
+
+        # --- 11.
+        if is-obj (opts = last-arg)
+            [ cmd, ...args ] = args-array
+
+        # --- 10.
+        else
+            args-array.push last-arg
+            opts = {}
+        opts = { cmd, args, oncomplete, }
     # 12
     else if num-args >= 2 and is-str args-array.1
         [ cmd, ...args ] = args-array

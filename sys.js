@@ -128,40 +128,17 @@ function sys(){
   }
 }
 function sysdoExec(opts){
-  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts;
-  cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
+  var cmd, args, ref$, verbose, sync;
+  cmd = opts.cmd, args = (ref$ = opts.args) != null
     ? ref$
-    : [], outIgnore = (ref$ = opts.outIgnore) != null
+    : [], verbose = (ref$ = opts.verbose) != null
     ? ref$
-    : our.opts.outIgnore, errIgnore = (ref$ = opts.errIgnore) != null
+    : our.opts.verbose, sync = (ref$ = opts.sync) != null
     ? ref$
-    : our.opts.errIgnore, die = (ref$ = opts.die) != null
-    ? ref$
-    : our.opts.die, verbose = (ref$ = opts.verbose) != null
-    ? ref$
-    : our.opts.verbose, quiet = (ref$ = opts.quiet) != null
-    ? ref$
-    : our.opts.quiet, quietOnExit = (ref$ = opts.quietOnExit) != null
-    ? ref$
-    : our.opts.quietOnExit, sync = (ref$ = opts.sync) != null
-    ? ref$
-    : our.opts.sync, outPrint = (ref$ = opts.outPrint) != null
-    ? ref$
-    : our.opts.outPrint, errPrint = (ref$ = opts.errPrint) != null
-    ? ref$
-    : our.opts.errPrint, outSplit = (ref$ = opts.outSplit) != null
-    ? ref$
-    : our.opts.outSplit, errSplit = (ref$ = opts.errSplit) != null
-    ? ref$
-    : our.opts.errSplit, outSplitRemoveTrailingElement = (ref$ = opts.outSplitRemoveTrailingElement) != null
-    ? ref$
-    : our.opts.outSplitRemoveTrailingElement, errSplitRemoveTrailingElement = (ref$ = opts.errSplitRemoveTrailingElement) != null
-    ? ref$
-    : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
-  args.unshift(cmd);
-  cmd = args.join(' ');
+    : our.opts.sync;
+  opts.cmd = join(' ', [cmd].concat(args));
   if (verbose) {
-    log(sprintf("%s %s", green(bullet()), cmd));
+    log(sprintf("%s %s", green(bullet()), opts.cmd));
   }
   if (sync) {
     return sysdoExecSync(opts);
@@ -665,7 +642,7 @@ function syserror(arg$){
   }
 }
 function sysProcessArgs(){
-  var argsArray, type, numArgs, opts, cmd, args, oncomplete, cmdArgs, x$;
+  var argsArray, type, numArgs, opts, cmd, args, oncomplete, lastArg, cmdArgs, x$;
   argsArray = slice$.call(arguments);
   type = argsArray.shift();
   if (type !== 'exec' && type !== 'spawn') {
@@ -731,25 +708,18 @@ function sysProcessArgs(){
     if (!isFunc(oncomplete)) {
       return aerror();
     }
-    cmd = argsArray[0], args = slice$.call(argsArray, 1);
+    lastArg = argsArray.pop();
+    if (isObj(opts = lastArg)) {
+      cmd = argsArray[0], args = slice$.call(argsArray, 1);
+    } else {
+      argsArray.push(lastArg);
+      opts = {};
+    }
     opts = {
       cmd: cmd,
       args: args,
       oncomplete: oncomplete
     };
-  } else if (numArgs >= 4 && isStr(argsArray[1])) {
-    oncomplete = argsArray.pop();
-    if (!isFunc(oncomplete)) {
-      return aerror();
-    }
-    opts = argsArray.pop();
-    if (!isObj(opts)) {
-      return aerror();
-    }
-    cmd = argsArray[0], args = slice$.call(argsArray, 1);
-    opts.cmd = cmd;
-    opts.args = args;
-    opts.oncomplete = oncomplete;
   } else if (numArgs >= 2 && isStr(argsArray[1])) {
     cmd = argsArray[0], args = slice$.call(argsArray, 1);
     opts = {
