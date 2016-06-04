@@ -53,7 +53,14 @@ describe 'Sys' ->
             tgt.sys-exec do
                 cmd: 'find non/existent/path'
                 oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
-                    expect code .to-equal 1
+                    expect code .not.to-equal 0
+                    done()
+
+        test 'usage 1 with non-existent cmd' (done) ->
+            tgt.sys-exec do
+                cmd: './non-existent-cmd'
+                oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
+                    expect code .not.to-equal 0
                     done()
 
         test 'usage 1 with exit code and signal' (done) ->
@@ -122,6 +129,17 @@ describe 'Sys' ->
                     expect process.stdout.write .to-have-been-called()
                     done()
 
+        test 'usage 13' (done) ->
+            tgt.sys-exec do
+                'ls' '-Q'
+                sprintf '"%s"/*.txt' our.dir.test
+                '|' 'xargs' 'cat' '|' 'wc' '-w'
+                verbose: true
+                oncomplete: ({ out, }) ->
+                    expect out.trim() .to-equal '12'
+                    expect process.stdout.write .to-have-been-called()
+                    done()
+
     describe 'sys-exec, sync' ->
 
         # --- just an overly complicated shell command.
@@ -174,7 +192,7 @@ describe 'Sys' ->
         test 'usage 8' ->
             tgt.sys-exec do
                 cmd
-                oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
+                ({ out, ok, code, signal, stdout, stderr, }) ->
                     expect out.trim() .to-equal '12'
                     expect process.stdout.write .not.to-have-been-called()
 
@@ -182,7 +200,7 @@ describe 'Sys' ->
             tgt.sys-exec do
                 cmd
                 verbose: true
-                oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
+                ({ out, ok, code, signal, stdout, stderr, }) ->
                     expect out.trim() .to-equal '12'
                     expect process.stdout.write .to-have-been-called()
 
@@ -222,3 +240,149 @@ describe 'Sys' ->
             expect out.trim() .to-equal '12'
             expect process.stdout.write .to-have-been-called()
 
+    describe 'sys-spawn, async' ->
+        cmd = 'cat'
+        arg1 = '-E'
+        arg2 = sprintf "%s/3 words.txt" our.dir.test
+        args = [ arg1, arg2, ]
+
+        before-each ->
+            tgt.sys-set sync: false
+
+        test 'usage 1' (done) ->
+            tgt.sys-spawn do
+                cmd: 'true'
+                oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
+                    expect out.trim() .to-equal ''
+                    expect process.stdout.write .not.to-have-been-called()
+                    expect code .to-equal 0
+                    expect out .to-equal stdout
+                    expect tgt.is-str stderr .to-equal true
+                    done()
+
+        test 'usage 1 with non-existent cmd' (done) ->
+            tgt.sys-spawn do
+                cmd: './non-existent-cmd'
+                oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
+                    expect code .to-equal void
+                    done()
+
+        test 'usage 3' (done) ->
+            tgt.sys-spawn do
+                'true'
+                oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
+                    expect out.trim() .to-equal ''
+                    expect process.stdout.write .not.to-have-been-called()
+                    expect code .to-equal 0
+                    done()
+
+        # --- no 2, 4, 12 for async.
+
+        test 'usage 3, verbose' (done) ->
+            tgt.sys-spawn do
+                'true'
+                verbose: true
+                oncomplete: ({ out, }) ->
+                    expect out.trim() .to-equal ''
+                    expect process.stdout.write .to-have-been-called()
+                    done()
+
+        test 'usage 5' (done) ->
+            tgt.sys-spawn do
+                cmd
+                args
+                verbose: true
+                oncomplete: ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .to-have-been-called()
+                    done()
+
+        test 'usage 5 with exit code' (done) ->
+            tgt.sys-spawn do
+                'find'
+                ['./non/existent']
+                oncomplete: ({ out, code, }) ->
+                    expect out .to-equal ''
+                    expect code .not.to-equal 0
+                    expect process.stdout.write .not.to-have-been-called()
+                    done()
+
+        test 'usage 5 with exit code and signal' (done) ->
+            child = tgt.sys-spawn do
+                'yes'
+                []
+                verbose: true
+                oncomplete: ({ out, code, signal, }) ->
+                    expect process.stdout.write .to-have-been-called()
+                    expect code .to-equal null
+                    expect signal .to-equal 'SIGHUP'
+                    done()
+            child.kill 'SIGHUP'
+
+        test 'usage 6' (done) ->
+            tgt.sys-spawn do
+                cmd
+                args
+                ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .not.to-have-been-called()
+                    done()
+
+        test 'usage 7' (done) ->
+            tgt.sys-spawn do
+                cmd
+                args
+                verbose: true
+                ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .to-have-been-called()
+                    done()
+
+        test 'usage 8' (done) ->
+            tgt.sys-spawn do
+                'true'
+                ({ out, }) ->
+                    expect out.trim() .to-equal ''
+                    expect process.stdout.write .not.to-have-been-called()
+                    done()
+
+        test 'usage 9' (done) ->
+            tgt.sys-spawn do
+                'true'
+                verbose: true
+                ({ out, }) ->
+                    expect out.trim() .to-equal ''
+                    expect process.stdout.write .to-have-been-called()
+                    done()
+
+        test 'usage 10' (done) ->
+            tgt.sys-spawn do
+                cmd
+                arg1
+                arg2
+                ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .not.to-have-been-called()
+                    done()
+
+        test 'usage 11' (done) ->
+            tgt.sys-spawn do
+                cmd
+                arg1
+                arg2
+                verbose: true
+                ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .to-have-been-called()
+                    done()
+
+        test 'usage 13' (done) ->
+            tgt.sys-spawn do
+                cmd
+                arg1
+                arg2
+                verbose: true
+                oncomplete: ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .to-have-been-called()
+                    done()
