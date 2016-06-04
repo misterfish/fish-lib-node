@@ -593,28 +593,28 @@ function sysdo-spawn opts
 
 function sysdo-spawn-sync opts
     {
-        cmd,
-        oncomplete,
-        args = [],
+        cmd
+        oncomplete
+        args = []
 
-        out-ignore = our.opts.out-ignore,
-        err-ignore = our.opts.err-ignore,
+        out-ignore = our.opts.out-ignore
+        err-ignore = our.opts.err-ignore
 
-        die = our.opts.die,
-        verbose = our.opts.verbose,
-        quiet = our.opts.quiet,
-        quiet-on-exit = our.opts.quiet-on-exit,
-        quiet-node-err = our.opts.quiet-node-err,
-        sync = our.opts.sync,
-        out-print = our.opts.out-print,
-        err-print = our.opts.err-print,
-        out-split = our.opts.out-split,
-        err-split = our.opts.err-split,
+        die = our.opts.die
+        verbose = our.opts.verbose
+        quiet = our.opts.quiet
+        quiet-on-exit = our.opts.quiet-on-exit
+        quiet-node-err = our.opts.quiet-node-err
+        sync = our.opts.sync
+        out-print = our.opts.out-print
+        err-print = our.opts.err-print
+        out-split = our.opts.out-split
+        err-split = our.opts.err-split
 
         out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element
         err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element
 
-        invocation-opts,
+        invocation-opts
     } = opts
 
     call-opts =
@@ -692,29 +692,29 @@ function sysdo-spawn-sync opts
 
 function sysdo-spawn-async opts
     {
-        cmd,
-        oncomplete,
-        args = [],
+        cmd
+        oncomplete
+        args = []
 
-        out-ignore = our.opts.out-ignore,
-        err-ignore = our.opts.err-ignore,
+        out-ignore = our.opts.out-ignore
+        err-ignore = our.opts.err-ignore
 
-        die = our.opts.die,
-        verbose = our.opts.verbose,
-        quiet = our.opts.quiet,
-        quiet-on-exit = our.opts.quiet-on-exit,
-        sync = our.opts.sync,
-        out-print = our.opts.out-print,
-        err-print = our.opts.err-print,
-        out-split = our.opts.out-split,
-        err-split = our.opts.err-split,
+        die = our.opts.die
+        verbose = our.opts.verbose
+        quiet = our.opts.quiet
+        quiet-on-exit = our.opts.quiet-on-exit
+        sync = our.opts.sync
+        out-print = our.opts.out-print
+        err-print = our.opts.err-print
+        out-split = our.opts.out-split
+        err-split = our.opts.err-split
 
-        quiet-node-err = our.opts.quiet-node-err,
+        quiet-node-err = our.opts.quiet-node-err
 
         out-split-remove-trailing-element = our.opts.out-split-remove-trailing-element
         err-split-remove-trailing-element = our.opts.err-split-remove-trailing-element
 
-        invocation-opts,
+        invocation-opts
     } = opts
 
     syserror-fired = false
@@ -840,7 +840,7 @@ function sysdo-spawn-async opts
             if not syserror-fired
                 syserror-fired := true
                 # --- calls oncomplete.
-                do-syserror { code, signal }
+                do-syserror { code, signal, }
             return
 
         # --- all good.
