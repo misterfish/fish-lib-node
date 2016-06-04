@@ -421,8 +421,7 @@ describe 'Sys' ->
         before-each ->
             tgt.sys-set sync: true
 
-        # two calling styles XXX
-        test 'usage 1' (done) ->
+        test 'usage 1, function form' ->
             tgt.sys-spawn do
                 cmd: 'true'
                 oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
@@ -431,7 +430,16 @@ describe 'Sys' ->
                     expect code .to-equal 0
                     expect out .to-equal stdout
                     expect stderr .to-be null
-                    done()
+
+        test 'usage 1, return form' ->
+            { out, ok, code, signal, stdout, stderr, } = tgt.sys-spawn do
+                cmd: 'true'
+
+            expect out.trim() .to-equal ''
+            expect process.stdout.write .not.to-have-been-called()
+            expect code .to-equal 0
+            expect out .to-equal stdout
+            expect stderr .to-be null
 
         test 'usage 1 with non-existent cmd' ->
             tgt.sys-spawn do

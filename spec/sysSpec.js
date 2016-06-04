@@ -477,7 +477,7 @@ describe('Sys', function(){
         sync: true
       });
     });
-    test('usage 1', function(done){
+    test('usage 1, function form', function(){
       return tgt.sysSpawn({
         cmd: 'true',
         oncomplete: function(arg$){
@@ -487,10 +487,20 @@ describe('Sys', function(){
           expect(process.stdout.write).not.toHaveBeenCalled();
           expect(code).toEqual(0);
           expect(out).toEqual(stdout);
-          expect(stderr).toBe(null);
-          return done();
+          return expect(stderr).toBe(null);
         }
       });
+    });
+    test('usage 1, return form', function(){
+      var ref$, out, ok, code, signal, stdout, stderr;
+      ref$ = tgt.sysSpawn({
+        cmd: 'true'
+      }), out = ref$.out, ok = ref$.ok, code = ref$.code, signal = ref$.signal, stdout = ref$.stdout, stderr = ref$.stderr;
+      expect(out.trim()).toEqual('');
+      expect(process.stdout.write).not.toHaveBeenCalled();
+      expect(code).toEqual(0);
+      expect(out).toEqual(stdout);
+      return expect(stderr).toBe(null);
     });
     test('usage 1 with non-existent cmd', function(){
       return tgt.sysSpawn({
