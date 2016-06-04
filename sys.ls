@@ -189,16 +189,20 @@ export
 
 child-process = require 'child_process'
 
-{ last, keys, join, map, each, compact, } = require "prelude-ls"
+{ last, keys, join, map, compact, } = require "prelude-ls"
 sprintf = require 'sprintf'
 
-#main = if is-phantom() then global.main else require.main
-#{ } = main.exports
+# main = if is-phantom() then global.main else require.main
+# { } = main.exports
 
-{ is-buffer, is-string, is-func, is-obj, is-arr, is-str, } = require './types'
-{ aerror, iwarn, warn, error, } = require './squeak'
-{ log, bullet, bullet-get, green, bright-red, yellow, magenta, cyan, } = require './speak'
-{ array, } = require './util'
+# --- is-buffer, is-string, is-func, is-obj, is-arr, is-str,
+types = require './types'
+# --- aerror, iwarn, warn, error,
+squeak = require './squeak'
+# --- log, bullet, bullet-get, green, bright-red, yellow, cyan,
+speak = require './speak'
+# --- array,
+util = require './util'
 
 our =
     # --- functions which we need from main but which main doesn't want to
@@ -278,7 +282,7 @@ function sys-set opts
         name: 'sys'
 
 function sys-get key
-    return complain 'No such key' bright-red key unless our.opts.has-own-property key
+    return complain 'No such key' speak.bright-red key unless our.opts.has-own-property key
     our.opts[key]
 
 # --- quote shell metacharacters in the most simple way possible: replace
@@ -310,10 +314,10 @@ function shell-quote arg
 
 function sys-ok ...args
     onxxx = args.pop()
-    if not is-func onxxx
-        return aerror 'bad call'
+    if not types.is-func onxxx
+        squeak.aerror 'bad call'
     # --- (2)
-    if is-func last args
+    if types.is-func last args
         onok = args.pop()
         onnotok = onxxx
     # --- (1)
@@ -351,7 +355,7 @@ function sys
         sys-exec.apply null arguments
     else if our.opts.type is 'spawn'
         sys-spawn.apply null arguments
-    else return aerror 'bad global opts.type'
+    else squeak.aerror 'bad global opts.type'
 
 # --- actually do the exec.
 #
@@ -369,7 +373,7 @@ function sysdo-exec opts
     # done so), so we just concatenate.
     opts.cmd = join ' ' [cmd] ++ args
 
-    log sprintf "%s %s" (green bullet!), opts.cmd if verbose
+    speak.log sprintf "%s %s" (speak.green speak.bullet!), opts.cmd if verbose
 
     if sync
         sysdo-exec-sync opts
@@ -409,7 +413,7 @@ function sysdo-exec-sync opts
     # to do and we don't currently support it.
 
     call-opts =
-        stdio: array do
+        stdio: util.array do
             0                               # stdin
 
             if out-ignore
@@ -513,7 +517,7 @@ function sysdo-exec-async opts
             code = err.code
             # --- no shell
             if code is 'ENOENT'
-                warn "Couldn't spawn a shell!" unless quiet
+                squeak.warn "Couldn't spawn a shell!" unless quiet
             else
                 # --- it seems node might not actually set this in all cases.
                 signal = err.signal
@@ -577,14 +581,14 @@ function sysdo-spawn opts
     if err-split == true then err-split = opts.err-split = '\n'
 
     if oncomplete?
-        return aerror() unless is-func that
+        squeak.aerror() unless types.is-func that
 
     if verbose then do ->
         print-cmd = join ' ', [cmd] ++ map (shell-quote), args
-        ind = ' ' * bullet-get 'indent'
-        spa = ' ' * bullet-get 'spacing'
-        bul = green bullet()
-        log join '' array ind, bul, spa, print-cmd
+        ind = ' ' * speak.bullet-get 'indent'
+        spa = ' ' * speak.bullet-get 'spacing'
+        bul = speak.green speak.bullet()
+        speak.log join '' util.array ind, bul, spa, print-cmd
 
     if sync
         sysdo-spawn-sync opts
@@ -618,7 +622,7 @@ function sysdo-spawn-sync opts
     } = opts
 
     call-opts =
-        stdio: array do
+        stdio: util.array do
             0                               # stdin
 
             if out-ignore
@@ -761,17 +765,17 @@ function sysdo-spawn-async opts
     (keys stream-configs).for-each (which) ->
         stream-config = stream-configs[which]
         stream-config.spawn-stream.on 'error' (error) ->
-            warn "Got error on stream std#which" error
+            squeak.warn "Got error on stream std#which" error
 
         return if stream-config.ignore
 
         # --- data is Buffer or string.
         stream-config.spawn-stream.on 'data' (data) ->
-            if is-string data
+            if types.is-string data
                 str = data
-            else if is-buffer data
+            else if types.is-buffer data
                 str = data.toString()
-            else return iwarn "Doesn't seem to be a Buffer or a string"
+            else return squeak.iwarn "Doesn't seem to be a Buffer or a string"
 
             handle-stream-data stream-data, stream-config, str
 
@@ -869,17 +873,17 @@ function sysdo-spawn-async opts
 
 # --- @private
 function syserror ({ cmd, code, signal, oncomplete, node-err, stdout, stderr, die, quiet, quiet-on-exit, quiet-node-err, })
-    str-sig = " «got signal #{ cyan signal }»" if signal
-    str-cmd = " #{ bright-red cmd }"
+    str-sig = " «got signal #{ speak.cyan signal }»" if signal
+    str-cmd = " #{ speak.bright-red cmd }"
 
     # --- code can be undefined, e.g. when exiting on signal, or when the
     # command failed to even start.
 
-    str-exit = " «exit status #{ yellow code }»" if code?
+    str-exit = " «exit status #{ speak.yellow code }»" if code?
 
     str-node-err = " «#{node-err}»" if node-err and not quiet-node-err
 
-    str = join '', compact array do
+    str = join '', compact util.array do
         "Couldn't execute cmd"
         str-cmd
         str-exit
@@ -893,15 +897,15 @@ function syserror ({ cmd, code, signal, oncomplete, node-err, stdout, stderr, di
         # but there might be async cases where this printing is undesirable. XXX
         console.warn stderr if stderr?
 
-        error str
+        squeak.error str
         process.exit code
     else
         # --- command started but ended badly.
         if code?
-            warn str unless quiet-on-exit
+            squeak.warn str unless quiet-on-exit
         # --- command didn't start or ended on a signal.
         else
-            warn str unless quiet
+            squeak.warn str unless quiet
 
     oncomplete { ok: false, code, signal, out: stdout, stdout, stderr } if oncomplete?
 
@@ -915,64 +919,64 @@ function syserror ({ cmd, code, signal, oncomplete, node-err, stdout, stderr, di
 
 function sys-process-args ...args-array
     type = args-array.shift()
-    return aerror() if type not in <[ exec spawn ]>
+    squeak.aerror() if type not in <[ exec spawn ]>
     num-args = args-array.length
 
-    if is-arr args-array.1 and type is 'exec'
-        return aerror 'This usage is not supported for exec mode'
+    if types.is-arr args-array.1 and type is 'exec'
+        squeak.aerror 'This usage is not supported for exec mode'
 
     # 1
-    if num-args == 1 and is-obj args-array.0
+    if num-args == 1 and types.is-obj args-array.0
         opts = args-array.0
     # 2
-    else if num-args == 1 and is-str args-array.0
+    else if num-args == 1 and types.is-str args-array.0
         [ cmd ] = args-array
         opts = { cmd }
     # 3
-    else if num-args == 2 and is-obj args-array.1
+    else if num-args == 2 and types.is-obj args-array.1
         [ cmd, opts ] = args-array
         opts.cmd = cmd
     # 4
-    else if num-args == 2 and is-arr args-array.1
+    else if num-args == 2 and types.is-arr args-array.1
         [ cmd, args ] = args-array
         opts = { cmd, args }
     # 5
-    else if num-args == 3 and is-arr args-array.1 and is-obj args-array.2
+    else if num-args == 3 and types.is-arr args-array.1 and types.is-obj args-array.2
         [ cmd, args, opts ] = args-array
         opts.cmd = cmd
         opts.args = args
     # 6
-    else if num-args == 3 and is-arr args-array.1 and is-func args-array.2
+    else if num-args == 3 and types.is-arr args-array.1 and types.is-func args-array.2
         [ cmd, args, oncomplete ] = args-array
         opts = { cmd, args, oncomplete }
     # 7
-    else if num-args == 4 and is-arr args-array.1
+    else if num-args == 4 and types.is-arr args-array.1
         [ cmd, args, opts, oncomplete ] = args-array
-        return aerror() unless is-obj opts
-        return aerror() unless is-func oncomplete
+        squeak.aerror() unless types.is-obj opts
+        squeak.aerror() unless types.is-func oncomplete
         opts.cmd = cmd
         opts.args = args
         opts.oncomplete = oncomplete
     # 8
-    else if num-args == 2 and is-func args-array.1
+    else if num-args == 2 and types.is-func args-array.1
         [ cmd, oncomplete ] = args-array
         opts = { cmd, oncomplete }
     # --- 9.
-    else if num-args == 3 and is-obj args-array.1
+    else if num-args == 3 and types.is-obj args-array.1
         [ cmd, opts, oncomplete ] = args-array
-        return aerror() unless is-func oncomplete
+        squeak.aerror() unless types.is-func oncomplete
         opts.cmd = cmd
         opts.oncomplete = oncomplete
     # --- 10, 11, 12, 13.
-    else if num-args >= 2 and is-str args-array.1
+    else if num-args >= 2 and types.is-str args-array.1
         last-arg = args-array.pop()
         # --- 10, 11.
-        if is-func last-arg
+        if types.is-func last-arg
             oncomplete = last-arg
             last-arg2 = args-array.pop()
 
             # --- 11.
-            if is-obj last-arg2
+            if types.is-obj last-arg2
                 opts = last-arg2
             # --- 10.
             else
@@ -987,7 +991,7 @@ function sys-process-args ...args-array
             last-arg2 = args-array.pop()
 
             # --- 13.
-            if is-obj last-arg2
+            if types.is-obj last-arg2
                 opts = last-arg2
             # --- 12.
             else
@@ -996,11 +1000,11 @@ function sys-process-args ...args-array
             [ cmd, ...args ] = args-array
             opts <<< { cmd, args, }
     else
-        return aerror()
+        squeak.aerror()
 
     if opts.args then opts.args = compact opts.args.map ->
         if not it?
-            warn "Skipping null/undefined arg (check args array)"
+            squeak.warn "Skipping null/undefined arg (check args array)"
         it
 
     opts
@@ -1008,7 +1012,7 @@ function sys-process-args ...args-array
 
 function output-to-scalar-or-list output, do-split, split-remove-trailing-element
     # --- it is Buffer|String.
-    output .= to-string() if is-buffer output
+    output .= to-string() if types.is-buffer output
 
     if do-split then
         do-split = '\n' if do-split is true

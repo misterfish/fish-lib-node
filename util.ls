@@ -1,6 +1,4 @@
 export
-    shuffle-array
-    merge-objects
     ord
     chr
     range
@@ -9,38 +7,24 @@ export
     to-array
     flat-array
 
-{ is-integer-positive, is-int, is-num, is-str, is-func, } = require './types'
-{ aerror, warn, } = require './squeak'
-{ green, bright-red, } = require './speak'
-
-# --- shuffle an array, not particularly efficiently.
-function shuffle-array input
-    l = input.length
-    out = []
-    locations = { [i, 42] for i from 0 to l - 1 }
-    locations-num-keys = l
-    times l, ->
-        key = (keys locations)[
-            m = Math.floor Math.random! * locations-num-keys
-        ]
-        delete locations[key]
-        out.push input[key]
-        locations-num-keys--
-    out
-
-# --- merge all argument objects into a new object, going from left to
-# right, and only using own properties.
-
-function merge-objects ...obj
-    { [k, v] for obj in arguments for k, v of obj }
+# --- is-int-pos, is-int, is-num, is-str, is-func, is-array,
+types = require './types'
+# --- aerror, warn,
+squeak = require './squeak'
+# --- green, bright-red,
+speak = require './speak'
 
 function ord
-    return aerror() unless is-str it
-    warn "Ignoring extra chars (got '#{ green it.substr 0, 1 }#{ bright-red it.substr 1}' " if it.length > 1
+    squeak.aerror it unless types.is-str it
+    if it.length > 1
+        squeak.warn sprintf do
+            "Ignoring extra chars (got '%s%s')"
+            speak.green it.substr 0 1
+            speak.bright-red it.substr 1
     it.char-code-at 0
 
 function chr
-    return aerror() unless is-num it
+    squeak.aerror it unless types.is-num it
     String.from-char-code it
 
 # --- step by +1 or -1 to get from a to b, inclusive.
@@ -50,8 +34,8 @@ function chr
 # if not, return an array.
 
 function range a, b, func
-    return aerror() unless is-int a and is-int b
-    return aerror 'bad function' if func and not is-func func
+    squeak.aerror() unless types.is-int a and types.is-int b
+    squeak.aerror 'bad function' if func and not types.is-func func
 
     if func
         for i from a to b
@@ -62,8 +46,9 @@ function range a, b, func
 # --- call the function n times, and pass it the counter idx as its arg.
 #
 # the idx is 0-based to make it like ruby.
+
 function times n, func
-    return aerror() unless is-integer-positive n
+    return squeak.aerror() unless types.is-int-pos n
     for i from 1 to n
         func i-1
 
@@ -71,7 +56,7 @@ function times n, func
 function array
     [.. for &]
 
-# --- to-array arguments -> [arguments.0, arguments.1, ...]
+# --- turn an array-like object (e.g. arguments) into an array.
 function to-array
     [.. for &.0]
 
@@ -92,13 +77,12 @@ function flat-array ...vals
     ret = []
     recursing = false
     vals.for-each ->
-        if is-array it
+        if types.is-array it
             recursing := true
             v = it
         else
             v = [it]
         v.for-each ->
-            #ret.push flat-array it
             ret.push it
     if recursing
         flat-array.apply null ret

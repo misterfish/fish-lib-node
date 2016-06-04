@@ -76,7 +76,7 @@ our =
         #
         # 'throw' works the same as for error().
         #
-        # in fish-lib aerror() is always preceded by return.
+        # in fish-lib aerror() is never preceded by return.
 
         api-error: 'fatal'
 

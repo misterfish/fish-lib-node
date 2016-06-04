@@ -1,4 +1,4 @@
-var childProcess, ref$, last, keys, join, map, each, compact, sprintf, isBuffer, isString, isFunc, isObj, isArr, isStr, aerror, iwarn, warn, error, log, bullet, bulletGet, green, brightRed, yellow, magenta, cyan, array, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
+var childProcess, ref$, last, keys, join, map, compact, sprintf, types, squeak, speak, util, our, out$ = typeof exports != 'undefined' && exports || this, slice$ = [].slice;
 out$.init = init;
 out$.sysGet = sysGet;
 out$.sysSet = sysSet;
@@ -8,12 +8,12 @@ out$.sysSpawn = sysSpawn;
 out$.sys = sys;
 out$.shellQuote = shellQuote;
 childProcess = require('child_process');
-ref$ = require("prelude-ls"), last = ref$.last, keys = ref$.keys, join = ref$.join, map = ref$.map, each = ref$.each, compact = ref$.compact;
+ref$ = require("prelude-ls"), last = ref$.last, keys = ref$.keys, join = ref$.join, map = ref$.map, compact = ref$.compact;
 sprintf = require('sprintf');
-ref$ = require('./types'), isBuffer = ref$.isBuffer, isString = ref$.isString, isFunc = ref$.isFunc, isObj = ref$.isObj, isArr = ref$.isArr, isStr = ref$.isStr;
-ref$ = require('./squeak'), aerror = ref$.aerror, iwarn = ref$.iwarn, warn = ref$.warn, error = ref$.error;
-ref$ = require('./speak'), log = ref$.log, bullet = ref$.bullet, bulletGet = ref$.bulletGet, green = ref$.green, brightRed = ref$.brightRed, yellow = ref$.yellow, magenta = ref$.magenta, cyan = ref$.cyan;
-array = require('./util').array;
+types = require('./types');
+squeak = require('./squeak');
+speak = require('./speak');
+util = require('./util');
 our = {
   pkg: {
     confSet: void 8
@@ -55,7 +55,7 @@ function sysSet(opts){
 }
 function sysGet(key){
   if (!our.opts.hasOwnProperty(key)) {
-    return complain('No such key', brightRed(key));
+    return complain('No such key', speak.brightRed(key));
   }
   return our.opts[key];
 }
@@ -70,10 +70,10 @@ function sysOk(){
   var args, onxxx, onok, onnotok, opts;
   args = slice$.call(arguments);
   onxxx = args.pop();
-  if (!isFunc(onxxx)) {
-    return aerror('bad call');
+  if (!types.isFunc(onxxx)) {
+    squeak.aerror('bad call');
   }
-  if (isFunc(last(args))) {
+  if (types.isFunc(last(args))) {
     onok = args.pop();
     onnotok = onxxx;
   } else {
@@ -124,7 +124,7 @@ function sys(){
   } else if (our.opts.type === 'spawn') {
     return sysSpawn.apply(null, arguments);
   } else {
-    return aerror('bad global opts.type');
+    return squeak.aerror('bad global opts.type');
   }
 }
 function sysdoExec(opts){
@@ -138,7 +138,7 @@ function sysdoExec(opts){
     : our.opts.sync;
   opts.cmd = join(' ', [cmd].concat(args));
   if (verbose) {
-    log(sprintf("%s %s", green(bullet()), opts.cmd));
+    speak.log(sprintf("%s %s", speak.green(speak.bullet()), opts.cmd));
   }
   if (sync) {
     return sysdoExecSync(opts);
@@ -180,7 +180,7 @@ function sysdoExecSync(opts){
     ? ref$
     : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
   callOpts = {
-    stdio: array(0, outIgnore
+    stdio: util.array(0, outIgnore
       ? 'ignore'
       : outPrint ? 1 : 'pipe', errIgnore
       ? 'ignore'
@@ -273,7 +273,7 @@ function sysdoExecAsync(opts){
       code = err.code;
       if (code === 'ENOENT') {
         if (!quiet) {
-          warn("Couldn't spawn a shell!");
+          squeak.warn("Couldn't spawn a shell!");
         }
       } else {
         signal = err.signal;
@@ -349,18 +349,18 @@ function sysdoSpawn(opts){
     errSplit = opts.errSplit = '\n';
   }
   if ((that = oncomplete) != null) {
-    if (!isFunc(that)) {
-      return aerror();
+    if (!types.isFunc(that)) {
+      squeak.aerror();
     }
   }
   if (verbose) {
     (function(){
       var printCmd, ind, spa, bul;
       printCmd = join(' ', [cmd].concat(map(shellQuote, args)));
-      ind = repeatString$(' ', bulletGet('indent'));
-      spa = repeatString$(' ', bulletGet('spacing'));
-      bul = green(bullet());
-      return log(join('', array(ind, bul, spa, printCmd)));
+      ind = repeatString$(' ', speak.bulletGet('indent'));
+      spa = repeatString$(' ', speak.bulletGet('spacing'));
+      bul = speak.green(speak.bullet());
+      return speak.log(join('', util.array(ind, bul, spa, printCmd)));
     })();
   }
   if (sync) {
@@ -403,7 +403,7 @@ function sysdoSpawnSync(opts){
     ? ref$
     : our.opts.errSplitRemoveTrailingElement, invocationOpts = opts.invocationOpts;
   callOpts = {
-    stdio: array(0, outIgnore
+    stdio: util.array(0, outIgnore
       ? 'ignore'
       : outPrint ? 1 : 'pipe', errIgnore
       ? 'ignore'
@@ -532,19 +532,19 @@ function sysdoSpawnAsync(opts){
     var streamConfig;
     streamConfig = streamConfigs[which];
     streamConfig.spawnStream.on('error', function(error){
-      return warn("Got error on stream std" + which, error);
+      return squeak.warn("Got error on stream std" + which, error);
     });
     if (streamConfig.ignore) {
       return;
     }
     streamConfig.spawnStream.on('data', function(data){
       var str;
-      if (isString(data)) {
+      if (types.isString(data)) {
         str = data;
-      } else if (isBuffer(data)) {
+      } else if (types.isBuffer(data)) {
         str = data.toString();
       } else {
-        return iwarn("Doesn't seem to be a Buffer or a string");
+        return squeak.iwarn("Doesn't seem to be a Buffer or a string");
       }
       return handleStreamData(streamData, streamConfig, str);
     });
@@ -608,30 +608,30 @@ function syserror(arg$){
   var cmd, code, signal, oncomplete, nodeErr, stdout, stderr, die, quiet, quietOnExit, quietNodeErr, strSig, strCmd, strExit, strNodeErr, str;
   cmd = arg$.cmd, code = arg$.code, signal = arg$.signal, oncomplete = arg$.oncomplete, nodeErr = arg$.nodeErr, stdout = arg$.stdout, stderr = arg$.stderr, die = arg$.die, quiet = arg$.quiet, quietOnExit = arg$.quietOnExit, quietNodeErr = arg$.quietNodeErr;
   if (signal) {
-    strSig = " «got signal " + cyan(signal) + "»";
+    strSig = " «got signal " + speak.cyan(signal) + "»";
   }
-  strCmd = " " + brightRed(cmd);
+  strCmd = " " + speak.brightRed(cmd);
   if (code != null) {
-    strExit = " «exit status " + yellow(code) + "»";
+    strExit = " «exit status " + speak.yellow(code) + "»";
   }
   if (nodeErr && !quietNodeErr) {
     strNodeErr = " «" + nodeErr + "»";
   }
-  str = join('', compact(array("Couldn't execute cmd", strCmd, strExit, strSig, strNodeErr)));
+  str = join('', compact(util.array("Couldn't execute cmd", strCmd, strExit, strSig, strNodeErr)));
   if (die) {
     if (stderr != null) {
       console.warn(stderr);
     }
-    error(str);
+    squeak.error(str);
     process.exit(code);
   } else {
     if (code != null) {
       if (!quietOnExit) {
-        warn(str);
+        squeak.warn(str);
       }
     } else {
       if (!quiet) {
-        warn(str);
+        squeak.warn(str);
       }
     }
   }
@@ -651,69 +651,69 @@ function sysProcessArgs(){
   argsArray = slice$.call(arguments);
   type = argsArray.shift();
   if (type !== 'exec' && type !== 'spawn') {
-    return aerror();
+    squeak.aerror();
   }
   numArgs = argsArray.length;
-  if (isArr(argsArray[1]) && type === 'exec') {
-    return aerror('This usage is not supported for exec mode');
+  if (types.isArr(argsArray[1]) && type === 'exec') {
+    squeak.aerror('This usage is not supported for exec mode');
   }
-  if (numArgs === 1 && isObj(argsArray[0])) {
+  if (numArgs === 1 && types.isObj(argsArray[0])) {
     opts = argsArray[0];
-  } else if (numArgs === 1 && isStr(argsArray[0])) {
+  } else if (numArgs === 1 && types.isStr(argsArray[0])) {
     cmd = argsArray[0];
     opts = {
       cmd: cmd
     };
-  } else if (numArgs === 2 && isObj(argsArray[1])) {
+  } else if (numArgs === 2 && types.isObj(argsArray[1])) {
     cmd = argsArray[0], opts = argsArray[1];
     opts.cmd = cmd;
-  } else if (numArgs === 2 && isArr(argsArray[1])) {
+  } else if (numArgs === 2 && types.isArr(argsArray[1])) {
     cmd = argsArray[0], args = argsArray[1];
     opts = {
       cmd: cmd,
       args: args
     };
-  } else if (numArgs === 3 && isArr(argsArray[1]) && isObj(argsArray[2])) {
+  } else if (numArgs === 3 && types.isArr(argsArray[1]) && types.isObj(argsArray[2])) {
     cmd = argsArray[0], args = argsArray[1], opts = argsArray[2];
     opts.cmd = cmd;
     opts.args = args;
-  } else if (numArgs === 3 && isArr(argsArray[1]) && isFunc(argsArray[2])) {
+  } else if (numArgs === 3 && types.isArr(argsArray[1]) && types.isFunc(argsArray[2])) {
     cmd = argsArray[0], args = argsArray[1], oncomplete = argsArray[2];
     opts = {
       cmd: cmd,
       args: args,
       oncomplete: oncomplete
     };
-  } else if (numArgs === 4 && isArr(argsArray[1])) {
+  } else if (numArgs === 4 && types.isArr(argsArray[1])) {
     cmd = argsArray[0], args = argsArray[1], opts = argsArray[2], oncomplete = argsArray[3];
-    if (!isObj(opts)) {
-      return aerror();
+    if (!types.isObj(opts)) {
+      squeak.aerror();
     }
-    if (!isFunc(oncomplete)) {
-      return aerror();
+    if (!types.isFunc(oncomplete)) {
+      squeak.aerror();
     }
     opts.cmd = cmd;
     opts.args = args;
     opts.oncomplete = oncomplete;
-  } else if (numArgs === 2 && isFunc(argsArray[1])) {
+  } else if (numArgs === 2 && types.isFunc(argsArray[1])) {
     cmd = argsArray[0], oncomplete = argsArray[1];
     opts = {
       cmd: cmd,
       oncomplete: oncomplete
     };
-  } else if (numArgs === 3 && isObj(argsArray[1])) {
+  } else if (numArgs === 3 && types.isObj(argsArray[1])) {
     cmd = argsArray[0], opts = argsArray[1], oncomplete = argsArray[2];
-    if (!isFunc(oncomplete)) {
-      return aerror();
+    if (!types.isFunc(oncomplete)) {
+      squeak.aerror();
     }
     opts.cmd = cmd;
     opts.oncomplete = oncomplete;
-  } else if (numArgs >= 2 && isStr(argsArray[1])) {
+  } else if (numArgs >= 2 && types.isStr(argsArray[1])) {
     lastArg = argsArray.pop();
-    if (isFunc(lastArg)) {
+    if (types.isFunc(lastArg)) {
       oncomplete = lastArg;
       lastArg2 = argsArray.pop();
-      if (isObj(lastArg2)) {
+      if (types.isObj(lastArg2)) {
         opts = lastArg2;
       } else {
         argsArray.push(lastArg2);
@@ -726,7 +726,7 @@ function sysProcessArgs(){
     } else {
       argsArray.push(lastArg);
       lastArg2 = argsArray.pop();
-      if (isObj(lastArg2)) {
+      if (types.isObj(lastArg2)) {
         opts = lastArg2;
       } else {
         argsArray.push(lastArg2);
@@ -737,12 +737,12 @@ function sysProcessArgs(){
       opts.args = args;
     }
   } else {
-    return aerror();
+    squeak.aerror();
   }
   if (opts.args) {
     opts.args = compact(opts.args.map(function(it){
       if (it == null) {
-        warn("Skipping null/undefined arg (check args array)");
+        squeak.warn("Skipping null/undefined arg (check args array)");
       }
       return it;
     }));
@@ -752,7 +752,7 @@ function sysProcessArgs(){
   return x$;
 }
 function outputToScalarOrList(output, doSplit, splitRemoveTrailingElement){
-  if (isBuffer(output)) {
+  if (types.isBuffer(output)) {
     output = output.toString();
   }
   if (doSplit) {
