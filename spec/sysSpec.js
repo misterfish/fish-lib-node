@@ -1,7 +1,8 @@
-var fs, path, sprintf, test, xtest, config, our;
+var fs, path, sprintf, split, test, xtest, config, our;
 fs = require('fs');
 path = require('path');
 sprintf = require('sprintf');
+split = require('prelude-ls').split;
 test = global.it;
 xtest = global.xit;
 config = {
@@ -453,7 +454,7 @@ describe('Sys', function(){
         return done();
       });
     });
-    return test('usage 13', function(done){
+    test('usage 13', function(done){
       return tgt.sysSpawn(cmd, arg1, arg2, {
         verbose: true,
         oncomplete: function(arg$){
@@ -461,6 +462,46 @@ describe('Sys', function(){
           out = arg$.out;
           expect(out.trim()).toEqual('one two$\n$\nthree$');
           expect(process.stdout.write).toHaveBeenCalled();
+          return done();
+        }
+      });
+    });
+    test('output', function(done){
+      var file;
+      file = 'spec/sysSpec.ls';
+      return tgt.sysSpawn('cat', [file], {
+        oncomplete: function(arg$){
+          var out, code, readOk, e;
+          out = arg$.out, code = arg$.code;
+          readOk = void 8;
+          try {
+            expect(out).toEqual(fs.readFileSync(file).toString());
+            readOk = true;
+          } catch (e$) {
+            e = e$;
+          }
+          expect(readOk).toEqual(true);
+          return done();
+        }
+      });
+    });
+    return test('output split', function(done){
+      var file;
+      file = 'spec/sysSpec.ls';
+      return tgt.sysSpawn('cat', [file], {
+        outSplit: true,
+        outSplitRemoveTrailingElement: false,
+        oncomplete: function(arg$){
+          var out, code, readOk, e;
+          out = arg$.out, code = arg$.code;
+          readOk = void 8;
+          try {
+            expect(out).toEqual(split('\n', fs.readFileSync(file).toString()));
+            readOk = true;
+          } catch (e$) {
+            e = e$;
+          }
+          expect(readOk).toEqual(true);
           return done();
         }
       });

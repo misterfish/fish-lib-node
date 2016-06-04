@@ -3,6 +3,8 @@ path = require 'path'
 
 sprintf = require 'sprintf'
 
+{ split, } = require 'prelude-ls'
+
 test = global.it
 xtest = global.xit
 
@@ -410,6 +412,38 @@ describe 'Sys' ->
                 oncomplete: ({ out, }) ->
                     expect out.trim() .to-equal 'one two$\n$\nthree$'
                     expect process.stdout.write .to-have-been-called()
+                    done()
+
+        test 'output' (done) ->
+            file = 'spec/sysSpec.ls'
+            tgt.sys-spawn do
+                'cat'
+                [file]
+                oncomplete: ({ out, code, }) ->
+                    read-ok = void
+                    try
+                        expect out .to-equal do
+                            fs.read-file-sync file .to-string()
+                        read-ok = true
+                    catch
+                    expect read-ok .to-equal true
+                    done()
+
+        test 'output split' (done) ->
+            file = 'spec/sysSpec.ls'
+            tgt.sys-spawn do
+                'cat'
+                [file]
+                out-split: true
+                out-split-remove-trailing-element: false
+                oncomplete: ({ out, code, }) ->
+                    read-ok = void
+                    try
+                        expect out .to-equal split '\n',
+                            fs.read-file-sync file .to-string()
+                        read-ok = true
+                    catch
+                    expect read-ok .to-equal true
                     done()
 
     describe 'sys-spawn, sync' ->
