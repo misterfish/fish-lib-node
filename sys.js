@@ -455,6 +455,7 @@ function sysdoSpawnSync(opts){
   if (oncomplete != null) {
     oncomplete({
       ok: true,
+      code: status,
       out: stdout,
       stdout: stdout,
       stderr: stderr

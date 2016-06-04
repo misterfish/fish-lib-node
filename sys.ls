@@ -686,7 +686,7 @@ function sysdo-spawn-sync opts
     #
     # call oncomplete if it's there, then return the ret object.
 
-    oncomplete { ok: true, out: stdout, stdout, stderr, } if oncomplete?
+    oncomplete { ok: true, code: status, out: stdout, stdout, stderr, } if oncomplete?
 
     ret
 
