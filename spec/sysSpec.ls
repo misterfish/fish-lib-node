@@ -46,20 +46,27 @@ describe 'Sys' ->
                     expect out.trim() .to-equal '12'
                     expect process.stdout.write .not.to-have-been-called()
                     expect out .to-equal stdout
+                    # --- could it be a buffer? XXX
                     expect tgt.is-str stderr .to-equal true
                     done()
 
-        test 'usage 1 with exit code' (done) ->
+        test 'usage 1 with exit code and stderr' (done) ->
             tgt.sys-exec do
                 cmd: 'find non/existent/path'
+                err-print: false
                 oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
                     expect code .not.to-equal 0
+                    # --- gnu-specific XXX
+                    expect(stderr == // no \s such \s file //i).not.to-be null
                     done()
 
         test 'usage 1 with non-existent cmd' (done) ->
             tgt.sys-exec do
                 cmd: './non-existent-cmd'
+                err-print: false
                 oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
+                    # --- gnu-specific XXX
+                    expect(stderr == // not \s found //i).not.to-be null
                     expect code .not.to-equal 0
                     done()
 
@@ -155,6 +162,7 @@ describe 'Sys' ->
                     expect out.trim() .to-equal '12'
                     expect process.stdout.write .not.to-have-been-called()
                     expect out .to-equal stdout
+                    # --- could it be a buffer? XXX
                     expect tgt.is-str stderr .to-equal true
 
         test 'usage 1, return form' ->
@@ -164,14 +172,27 @@ describe 'Sys' ->
             expect out.trim() .to-equal '12'
             expect process.stdout.write .not.to-have-been-called()
             expect out .to-equal stdout
+            # --- could it be a buffer? XXX
             expect tgt.is-str stderr .to-equal true
 
         test 'usage 1 with exit code' (done) ->
             tgt.sys-exec do
-                # --- otherwise the shell will write straight to our stderr.
-                cmd: 'find non/existent/path 2>/dev/null'
+                cmd: 'find non/existent/path'
+                err-print: false
                 oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
-                    expect code .to-equal 1
+                    # --- gnu-specific XXX
+                    expect(stderr == // no \s such \s file //i).not.to-be null
+                    expect code .not.to-equal 0
+                    done()
+
+        test 'usage 1 with non-existent cmd' (done) ->
+            tgt.sys-exec do
+                cmd: './non-existent-cmd'
+                err-print: false
+                oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
+                    # --- gnu-specific XXX
+                    expect(stderr == // not \s found //i).not.to-be null
+                    expect code .not.to-equal 0
                     done()
 
         # --- sync with signal not tested.
@@ -257,14 +278,18 @@ describe 'Sys' ->
                     expect process.stdout.write .not.to-have-been-called()
                     expect code .to-equal 0
                     expect out .to-equal stdout
+                    # --- could it be a buffer? XXX
                     expect tgt.is-str stderr .to-equal true
                     done()
 
         test 'usage 1 with non-existent cmd' (done) ->
             tgt.sys-spawn do
                 cmd: './non-existent-cmd'
+                err-print: false
                 oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
                     expect code .to-equal void
+                    # XXX
+                    expect stderr .to-equal ''
                     done()
 
         test 'usage 3' (done) ->
@@ -386,3 +411,136 @@ describe 'Sys' ->
                     expect out.trim() .to-equal 'one two$\n$\nthree$'
                     expect process.stdout.write .to-have-been-called()
                     done()
+
+    describe 'sys-spawn, sync' ->
+        cmd = 'cat'
+        arg1 = '-E'
+        arg2 = sprintf "%s/3 words.txt" our.dir.test
+        args = [ arg1, arg2, ]
+
+        before-each ->
+            tgt.sys-set sync: true
+
+        # two calling styles XXX
+        test 'usage 1' (done) ->
+            tgt.sys-spawn do
+                cmd: 'true'
+                oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
+                    expect out.trim() .to-equal ''
+                    expect process.stdout.write .not.to-have-been-called()
+                    expect code .to-equal 0
+                    expect out .to-equal stdout
+                    expect stderr .to-be null
+                    done()
+
+        test 'usage 1 with non-existent cmd' ->
+            tgt.sys-spawn do
+                cmd: './non-existent-cmd'
+                err-print: false
+                oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
+                    # XXX
+                    #expect stderr .to-be 'hop'
+                    expect code .to-equal null
+
+        test 'usage 3' ->
+            tgt.sys-spawn do
+                'true'
+                oncomplete: ({ out, ok, code, signal, stdout, stderr, }) ->
+                    expect out.trim() .to-equal ''
+                    expect process.stdout.write .not.to-have-been-called()
+                    expect code .to-equal 0
+
+        # --- no 2, 4, 12 for async.
+
+        test 'usage 3, verbose' ->
+            tgt.sys-spawn do
+                'true'
+                verbose: true
+                oncomplete: ({ out, }) ->
+                    expect out.trim() .to-equal ''
+                    expect process.stdout.write .to-have-been-called()
+
+        test 'usage 5' ->
+            tgt.sys-spawn do
+                cmd
+                args
+                verbose: true
+                oncomplete: ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .to-have-been-called()
+
+        test 'usage 5 with exit code' ->
+            tgt.sys-spawn do
+                'find'
+                ['./non/existent']
+                err-print: false
+                oncomplete: ({ out, code, stderr, }) ->
+                    expect out .to-equal ''
+                    expect code .not.to-equal 0
+                    expect code .not.to-equal null
+                    expect process.stdout.write .not.to-have-been-called()
+                    # --- gnu-specific XXX
+                    expect(stderr == // no \s such \s file //i).not.to-be null
+
+        # --- sync with signal not tested.
+
+        test 'usage 6' ->
+            tgt.sys-spawn do
+                cmd
+                args
+                ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .not.to-have-been-called()
+
+        test 'usage 7' ->
+            tgt.sys-spawn do
+                cmd
+                args
+                verbose: true
+                ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .to-have-been-called()
+
+        test 'usage 8' ->
+            tgt.sys-spawn do
+                'true'
+                ({ out, }) ->
+                    expect out.trim() .to-equal ''
+                    expect process.stdout.write .not.to-have-been-called()
+
+        test 'usage 9' ->
+            tgt.sys-spawn do
+                'true'
+                verbose: true
+                ({ out, }) ->
+                    expect out.trim() .to-equal ''
+                    expect process.stdout.write .to-have-been-called()
+
+        test 'usage 10' ->
+            tgt.sys-spawn do
+                cmd
+                arg1
+                arg2
+                ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .not.to-have-been-called()
+
+        test 'usage 11' ->
+            tgt.sys-spawn do
+                cmd
+                arg1
+                arg2
+                verbose: true
+                ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .to-have-been-called()
+
+        test 'usage 13' ->
+            tgt.sys-spawn do
+                cmd
+                arg1
+                arg2
+                verbose: true
+                oncomplete: ({ out, }) ->
+                    expect out.trim() .to-equal 'one two$\n$\nthree$'
+                    expect process.stdout.write .to-have-been-called()

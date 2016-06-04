@@ -54,13 +54,15 @@ describe('Sys', function(){
         }
       });
     });
-    test('usage 1 with exit code', function(done){
+    test('usage 1 with exit code and stderr', function(done){
       return tgt.sysExec({
         cmd: 'find non/existent/path',
+        errPrint: false,
         oncomplete: function(arg$){
           var out, ok, code, signal, stdout, stderr;
           out = arg$.out, ok = arg$.ok, code = arg$.code, signal = arg$.signal, stdout = arg$.stdout, stderr = arg$.stderr;
           expect(code).not.toEqual(0);
+          expect(/no\ssuch\sfile/i.exec(stderr)).not.toBe(null);
           return done();
         }
       });
@@ -68,9 +70,11 @@ describe('Sys', function(){
     test('usage 1 with non-existent cmd', function(done){
       return tgt.sysExec({
         cmd: './non-existent-cmd',
+        errPrint: false,
         oncomplete: function(arg$){
           var out, ok, code, signal, stdout, stderr;
           out = arg$.out, ok = arg$.ok, code = arg$.code, signal = arg$.signal, stdout = arg$.stdout, stderr = arg$.stderr;
+          expect(/not\sfound/i.exec(stderr)).not.toBe(null);
           expect(code).not.toEqual(0);
           return done();
         }
@@ -198,11 +202,26 @@ describe('Sys', function(){
     });
     test('usage 1 with exit code', function(done){
       return tgt.sysExec({
-        cmd: 'find non/existent/path 2>/dev/null',
+        cmd: 'find non/existent/path',
+        errPrint: false,
         oncomplete: function(arg$){
           var out, ok, code, signal, stdout, stderr;
           out = arg$.out, ok = arg$.ok, code = arg$.code, signal = arg$.signal, stdout = arg$.stdout, stderr = arg$.stderr;
-          expect(code).toEqual(1);
+          expect(/no\ssuch\sfile/i.exec(stderr)).not.toBe(null);
+          expect(code).not.toEqual(0);
+          return done();
+        }
+      });
+    });
+    test('usage 1 with non-existent cmd', function(done){
+      return tgt.sysExec({
+        cmd: './non-existent-cmd',
+        errPrint: false,
+        oncomplete: function(arg$){
+          var out, ok, code, signal, stdout, stderr;
+          out = arg$.out, ok = arg$.ok, code = arg$.code, signal = arg$.signal, stdout = arg$.stdout, stderr = arg$.stderr;
+          expect(/not\sfound/i.exec(stderr)).not.toBe(null);
+          expect(code).not.toEqual(0);
           return done();
         }
       });
@@ -272,7 +291,7 @@ describe('Sys', function(){
       return expect(process.stdout.write).toHaveBeenCalled();
     });
   });
-  return describe('sys-spawn, async', function(){
+  describe('sys-spawn, async', function(){
     var cmd, arg1, arg2, args;
     cmd = 'cat';
     arg1 = '-E';
@@ -301,10 +320,12 @@ describe('Sys', function(){
     test('usage 1 with non-existent cmd', function(done){
       return tgt.sysSpawn({
         cmd: './non-existent-cmd',
+        errPrint: false,
         oncomplete: function(arg$){
           var out, ok, code, signal, stdout, stderr;
           out = arg$.out, ok = arg$.ok, code = arg$.code, signal = arg$.signal, stdout = arg$.stdout, stderr = arg$.stderr;
           expect(code).toEqual(void 8);
+          expect(stderr).toEqual('');
           return done();
         }
       });
@@ -441,6 +462,156 @@ describe('Sys', function(){
           expect(out.trim()).toEqual('one two$\n$\nthree$');
           expect(process.stdout.write).toHaveBeenCalled();
           return done();
+        }
+      });
+    });
+  });
+  return describe('sys-spawn, sync', function(){
+    var cmd, arg1, arg2, args;
+    cmd = 'cat';
+    arg1 = '-E';
+    arg2 = sprintf("%s/3 words.txt", our.dir.test);
+    args = [arg1, arg2];
+    beforeEach(function(){
+      return tgt.sysSet({
+        sync: true
+      });
+    });
+    test('usage 1', function(done){
+      return tgt.sysSpawn({
+        cmd: 'true',
+        oncomplete: function(arg$){
+          var out, ok, code, signal, stdout, stderr;
+          out = arg$.out, ok = arg$.ok, code = arg$.code, signal = arg$.signal, stdout = arg$.stdout, stderr = arg$.stderr;
+          expect(out.trim()).toEqual('');
+          expect(process.stdout.write).not.toHaveBeenCalled();
+          expect(code).toEqual(0);
+          expect(out).toEqual(stdout);
+          expect(stderr).toBe(null);
+          return done();
+        }
+      });
+    });
+    test('usage 1 with non-existent cmd', function(){
+      return tgt.sysSpawn({
+        cmd: './non-existent-cmd',
+        errPrint: false,
+        oncomplete: function(arg$){
+          var out, ok, code, signal, stdout, stderr;
+          out = arg$.out, ok = arg$.ok, code = arg$.code, signal = arg$.signal, stdout = arg$.stdout, stderr = arg$.stderr;
+          return expect(code).toEqual(null);
+        }
+      });
+    });
+    test('usage 3', function(){
+      return tgt.sysSpawn('true', {
+        oncomplete: function(arg$){
+          var out, ok, code, signal, stdout, stderr;
+          out = arg$.out, ok = arg$.ok, code = arg$.code, signal = arg$.signal, stdout = arg$.stdout, stderr = arg$.stderr;
+          expect(out.trim()).toEqual('');
+          expect(process.stdout.write).not.toHaveBeenCalled();
+          return expect(code).toEqual(0);
+        }
+      });
+    });
+    test('usage 3, verbose', function(){
+      return tgt.sysSpawn('true', {
+        verbose: true,
+        oncomplete: function(arg$){
+          var out;
+          out = arg$.out;
+          expect(out.trim()).toEqual('');
+          return expect(process.stdout.write).toHaveBeenCalled();
+        }
+      });
+    });
+    test('usage 5', function(){
+      return tgt.sysSpawn(cmd, args, {
+        verbose: true,
+        oncomplete: function(arg$){
+          var out;
+          out = arg$.out;
+          expect(out.trim()).toEqual('one two$\n$\nthree$');
+          return expect(process.stdout.write).toHaveBeenCalled();
+        }
+      });
+    });
+    test('usage 5 with exit code', function(){
+      return tgt.sysSpawn('find', ['./non/existent'], {
+        errPrint: false,
+        oncomplete: function(arg$){
+          var out, code, stderr;
+          out = arg$.out, code = arg$.code, stderr = arg$.stderr;
+          expect(out).toEqual('');
+          expect(code).not.toEqual(0);
+          expect(code).not.toEqual(null);
+          expect(process.stdout.write).not.toHaveBeenCalled();
+          return expect(/no\ssuch\sfile/i.exec(stderr)).not.toBe(null);
+        }
+      });
+    });
+    test('usage 6', function(){
+      return tgt.sysSpawn(cmd, args, function(arg$){
+        var out;
+        out = arg$.out;
+        expect(out.trim()).toEqual('one two$\n$\nthree$');
+        return expect(process.stdout.write).not.toHaveBeenCalled();
+      });
+    });
+    test('usage 7', function(){
+      return tgt.sysSpawn(cmd, args, {
+        verbose: true
+      }, function(arg$){
+        var out;
+        out = arg$.out;
+        expect(out.trim()).toEqual('one two$\n$\nthree$');
+        return expect(process.stdout.write).toHaveBeenCalled();
+      });
+    });
+    test('usage 8', function(){
+      return tgt.sysSpawn('true', function(arg$){
+        var out;
+        out = arg$.out;
+        expect(out.trim()).toEqual('');
+        return expect(process.stdout.write).not.toHaveBeenCalled();
+      });
+    });
+    test('usage 9', function(){
+      return tgt.sysSpawn('true', {
+        verbose: true
+      }, function(arg$){
+        var out;
+        out = arg$.out;
+        expect(out.trim()).toEqual('');
+        return expect(process.stdout.write).toHaveBeenCalled();
+      });
+    });
+    test('usage 10', function(){
+      return tgt.sysSpawn(cmd, arg1, arg2, function(arg$){
+        var out;
+        out = arg$.out;
+        expect(out.trim()).toEqual('one two$\n$\nthree$');
+        return expect(process.stdout.write).not.toHaveBeenCalled();
+      });
+    });
+    test('usage 11', function(){
+      return tgt.sysSpawn(cmd, arg1, arg2, {
+        verbose: true
+      }, function(arg$){
+        var out;
+        out = arg$.out;
+        expect(out.trim()).toEqual('one two$\n$\nthree$');
+        return expect(process.stdout.write).toHaveBeenCalled();
+      });
+    });
+    return test('usage 13', function(){
+      return tgt.sysSpawn(cmd, arg1, arg2, {
+        verbose: true,
+        oncomplete: function(arg$){
+          var out;
+          out = arg$.out;
+          expect(out.trim()).toEqual('one two$\n$\nthree$');
+          return expect(process.stdout.write).toHaveBeenCalled();
         }
       });
     });
