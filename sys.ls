@@ -634,13 +634,20 @@ function sysdo-spawn-sync opts
             else 'pipe'                     # stderr
 
     call-opts <<< invocation-opts
-    ret = child-process.spawn-sync cmd, args, call-opts
+    child-process-ret = child-process.spawn-sync cmd, args, call-opts
 
     # --- output param is just an array containing stdout and stderr.
-    { pid, output, stdout, stderr, status, signal, } = ret
-    the-error = ret.error
+    { pid, output, stdout, stderr, status, signal, } = child-process-ret
+    the-error = child-process-ret.error
 
-    stdout = ret.stdout = output-to-scalar-or-list do
+    ret =
+        stdout: void
+        stderr: void
+        code: status
+        signal: signal
+        out: void
+
+    stdout = ret.stdout = ret.out = output-to-scalar-or-list do
         stdout
         out-split
         out-split-remove-trailing-element
@@ -648,6 +655,8 @@ function sysdo-spawn-sync opts
         stderr
         err-split
         err-split-remove-trailing-element
+
+    ok = void
 
     # --- e.g. /nonexistent/cmd
     if the-error
@@ -664,10 +673,10 @@ function sysdo-spawn-sync opts
             node-err: the-error.to-string(),
             stdout, stderr,
         }
-        return ret
+        ok = false
 
     # --- e.g. find /nonexistent/file
-    if status
+    else if status
         # --- if we're going to die, it will be printed during syserror().
         console.warn stderr if stderr? and not quiet and not die
 
@@ -680,14 +689,15 @@ function sysdo-spawn-sync opts
             code: status,
             stdout, stderr,
         }
-        return ret
+        ok = false
 
-    # --- ok.
-    #
-    # call oncomplete if it's there, then return the ret object.
+    else
+        ok = true
 
-    oncomplete { ok: true, code: status, out: stdout, stdout, stderr, } if oncomplete?
+    ret.ok = ok
 
+    # --- call oncomplete if it's there, then return the ret object.
+    oncomplete ret if oncomplete?
     ret
 
 function sysdo-spawn-async opts

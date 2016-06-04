@@ -370,7 +370,7 @@ function sysdoSpawn(opts){
   }
 }
 function sysdoSpawnSync(opts){
-  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, quietNodeErr, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, callOpts, ret, pid, output, stdout, stderr, status, signal, theError;
+  var cmd, oncomplete, args, ref$, outIgnore, errIgnore, die, verbose, quiet, quietOnExit, quietNodeErr, sync, outPrint, errPrint, outSplit, errSplit, outSplitRemoveTrailingElement, errSplitRemoveTrailingElement, invocationOpts, callOpts, childProcessRet, pid, output, stdout, stderr, status, signal, theError, ret, ok;
   cmd = opts.cmd, oncomplete = opts.oncomplete, args = (ref$ = opts.args) != null
     ? ref$
     : [], outIgnore = (ref$ = opts.outIgnore) != null
@@ -410,11 +410,19 @@ function sysdoSpawnSync(opts){
       : errPrint ? 2 : 'pipe')
   };
   import$(callOpts, invocationOpts);
-  ret = childProcess.spawnSync(cmd, args, callOpts);
-  pid = ret.pid, output = ret.output, stdout = ret.stdout, stderr = ret.stderr, status = ret.status, signal = ret.signal;
-  theError = ret.error;
-  stdout = ret.stdout = outputToScalarOrList(stdout, outSplit, outSplitRemoveTrailingElement);
+  childProcessRet = childProcess.spawnSync(cmd, args, callOpts);
+  pid = childProcessRet.pid, output = childProcessRet.output, stdout = childProcessRet.stdout, stderr = childProcessRet.stderr, status = childProcessRet.status, signal = childProcessRet.signal;
+  theError = childProcessRet.error;
+  ret = {
+    stdout: void 8,
+    stderr: void 8,
+    code: status,
+    signal: signal,
+    out: void 8
+  };
+  stdout = ret.stdout = ret.out = outputToScalarOrList(stdout, outSplit, outSplitRemoveTrailingElement);
   stderr = ret.stderr = outputToScalarOrList(stderr, errSplit, errSplitRemoveTrailingElement);
+  ok = void 8;
   if (theError) {
     if (stderr != null && !quiet) {
       console.warn(stderr);
@@ -432,9 +440,8 @@ function sysdoSpawnSync(opts){
       stdout: stdout,
       stderr: stderr
     });
-    return ret;
-  }
-  if (status) {
+    ok = false;
+  } else if (status) {
     if (stderr != null && !quiet && !die) {
       console.warn(stderr);
     }
@@ -450,16 +457,13 @@ function sysdoSpawnSync(opts){
       stdout: stdout,
       stderr: stderr
     });
-    return ret;
+    ok = false;
+  } else {
+    ok = true;
   }
+  ret.ok = ok;
   if (oncomplete != null) {
-    oncomplete({
-      ok: true,
-      code: status,
-      out: stdout,
-      stdout: stdout,
-      stderr: stderr
-    });
+    oncomplete(ret);
   }
   return ret;
 }
