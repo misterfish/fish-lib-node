@@ -11,7 +11,7 @@
     "name": "Allen Haim",
     "email": "allen@netherrealm.net"
   },
-  "license": "GPL-2.0",
+  "license": "MIT",
   "dependencies": {
     "nopt": "^3.0.3",
     "prelude-ls": "^1.1.2",
