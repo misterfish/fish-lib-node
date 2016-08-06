@@ -1,4 +1,4 @@
-var ref$, curry, join, last, map, each, compact, keys, values, sprintf, sysMod, sysGet, sysSet, sysOk, sysExec, sysSpawn, sys, shellQuote, speak, bullet, bulletSet, bulletGet, log, info, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, disableColors, forceColors, squeak, squeakSet, squeakGet, icomplain, complain, iwarn, ierror, warn, error, aerror, types, ok, defined, ofNumber, ofObject, okNumber, isArray, isObject, isString, isBoolean, isFunction, isInteger, isIntegerStrict, isNumber, isNumberStrict, isIntegerPositive, isIntegerPositiveStrict, isIntegerNonNegative, isIntegerNonNegativeStrict, isBuffer, ofNum, ofObj, okNum, isArr, isObj, isStr, isBool, isFunc, isInt, isIntStrict, isNum, isNumStrict, isIntPos, isIntPosStrict, isIntNonNeg, isIntNonNegStrict, isBuf, util, shuffleArray, mergeObjects, ord, chr, range, times, array, toArray, flatArray, opt, getopt, config, Identifier, k, v, slice$ = [].slice;
+var ref$, curry, join, last, map, each, compact, keys, values, sprintf, sysMod, sysGet, sysSet, sysOk, sysExec, sysSpawn, sys, shellQuote, speak, bullet, bulletSet, bulletGet, log, info, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, disableColors, forceColors, squeak, squeakSet, squeakGet, icomplain, complain, iwarn, ierror, warn, error, aerror, types, ok, defined, ofNumber, ofObject, okNumber, isArray, isObject, isString, isBoolean, isFunction, isInteger, isIntegerStrict, isNumber, isNumberStrict, isIntegerPositive, isIntegerPositiveStrict, isIntegerNonNegative, isIntegerNonNegativeStrict, isBuffer, ofNum, ofObj, okNum, isArr, isObj, isStr, isBool, isFunc, isInt, isIntStrict, isNum, isNumStrict, isIntPos, isIntPosStrict, isIntNonNeg, isIntNonNegStrict, isBuf, util, shuffleArray, mergeObjects, ord, chr, range, times, array, toArray, flatArray, opt, getopt, config, Identifier, k, v;
 ref$ = require("prelude-ls"), curry = ref$.curry, join = ref$.join, last = ref$.last, map = ref$.map, each = ref$.each, compact = ref$.compact, keys = ref$.keys, values = ref$.values;
 sprintf = require('sprintf');
 ref$ = sysMod = require('./sys'), sysGet = ref$.sysGet, sysSet = ref$.sysSet, sysOk = ref$.sysOk, sysExec = ref$.sysExec, sysSpawn = ref$.sysSpawn, sys = ref$.sys, shellQuote = ref$.shellQuote;
@@ -22,16 +22,20 @@ squeak.init({
 });
 Identifier = {};
 function importAll(target){
-  var k, ref$, v, results$ = [];
+  var k, ref$, v;
   for (k in ref$ = module.exports) {
     v = ref$[k];
-    results$.push(target[k] = v);
+    target[k] = v;
   }
-  return results$;
+  return this;
 }
 function importKind(target){
-  var kinds, doit, i$, len$, elem, lresult$, j$, len1$, kind, results$ = [];
-  kinds = slice$.call(arguments, 1);
+  var kinds, res$, i$, to$, doit, len$, elem, j$, len1$, kind;
+  res$ = [];
+  for (i$ = 1, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  kinds = res$;
   doit = function(kind){
     var identifiers, k, v, results$ = [];
     identifiers = Identifier[kind];
@@ -48,18 +52,16 @@ function importKind(target){
   };
   for (i$ = 0, len$ = kinds.length; i$ < len$; ++i$) {
     elem = kinds[i$];
-    lresult$ = [];
     if (isArray(elem)) {
       for (j$ = 0, len1$ = elem.length; j$ < len1$; ++j$) {
         kind = elem[j$];
-        lresult$.push(doit(kind));
+        doit(kind);
       }
     } else {
-      lresult$.push(doit(elem));
+      doit(elem);
     }
-    results$.push(lresult$);
   }
-  return results$;
+  return this;
 }
 function confSet(arg$){
   var source, target, name, ref$, k, v, results$ = [];

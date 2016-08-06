@@ -32,15 +32,24 @@ squeak.init do
 # --- convenience for importing groups of functions.
 Identifier = {}
 
+# --- returns 'this', allowing for:
+#
+# const fishLib = require('fish-lib').importAll(...)
+
 function import-all target
     for k, v of module.exports
         target[k] = v
+    @
 
 # --- import groups of functions.
 #
 # e.g.
 # import-kind 'all'
 # import-kind <[ squeak color ]>
+#
+# returns 'this', allowing for:
+#
+# const fishLib = require('fish-lib').importKind(...)
 
 function import-kind target, ...kinds
     doit = (kind) ->
@@ -57,6 +66,7 @@ function import-kind target, ...kinds
                 doit kind
         else
             doit elem
+    @
 
 # --- @dies.
 function conf-set { source, target, name = 'unknown' }
