@@ -1,5 +1,5 @@
 var ref$, curry, join, last, map, each, compact, keys, values, sprintf, sysMod, sysGet, sysSet, sysOk, sysExec, sysSpawn, sys, shellQuote, speak, bullet, bulletSet, bulletGet, log, info, green, brightGreen, blue, brightBlue, red, brightRed, yellow, brightYellow, cyan, brightCyan, magenta, brightMagenta, disableColors, forceColors, squeak, squeakSet, squeakGet, icomplain, complain, iwarn, ierror, warn, error, aerror, types, ok, defined, ofNumber, ofObject, okNumber, isArray, isObject, isString, isBoolean, isFunction, isInteger, isIntegerStrict, isNumber, isNumberStrict, isIntegerPositive, isIntegerPositiveStrict, isIntegerNonNegative, isIntegerNonNegativeStrict, isBuffer, ofNum, ofObj, okNum, isArr, isObj, isStr, isBool, isFunc, isInt, isIntStrict, isNum, isNumStrict, isIntPos, isIntPosStrict, isIntNonNeg, isIntNonNegStrict, isBuf, util, shuffleArray, mergeObjects, ord, chr, range, times, array, toArray, flatArray, opt, getopt, config, Identifier, k, v;
-ref$ = require("prelude-ls"), curry = ref$.curry, join = ref$.join, last = ref$.last, map = ref$.map, each = ref$.each, compact = ref$.compact, keys = ref$.keys, values = ref$.values;
+ref$ = require('prelude-ls'), curry = ref$.curry, join = ref$.join, last = ref$.last, map = ref$.map, each = ref$.each, compact = ref$.compact, keys = ref$.keys, values = ref$.values;
 sprintf = require('sprintf');
 ref$ = sysMod = require('./sys'), sysGet = ref$.sysGet, sysSet = ref$.sysSet, sysOk = ref$.sysOk, sysExec = ref$.sysExec, sysSpawn = ref$.sysSpawn, sys = ref$.sys, shellQuote = ref$.shellQuote;
 ref$ = speak = require('./speak'), bullet = ref$.bullet, bulletSet = ref$.bulletSet, bulletGet = ref$.bulletGet, log = ref$.log, info = ref$.info, green = ref$.green, brightGreen = ref$.brightGreen, blue = ref$.blue, brightBlue = ref$.brightBlue, red = ref$.red, brightRed = ref$.brightRed, yellow = ref$.yellow, brightYellow = ref$.brightYellow, cyan = ref$.cyan, brightCyan = ref$.brightCyan, magenta = ref$.magenta, brightMagenta = ref$.brightMagenta, disableColors = ref$.disableColors, forceColors = ref$.forceColors;
@@ -64,16 +64,16 @@ function importKind(target){
   return this;
 }
 function confSet(arg$){
-  var source, target, name, ref$, k, v, results$ = [];
+  var source, target, name, ref$, k, v;
   source = arg$.source, target = arg$.target, name = (ref$ = arg$.name) != null ? ref$ : 'unknown';
   for (k in source) {
     v = source[k];
     if (!target.hasOwnProperty(k)) {
       error("Invalid opt for " + yellow(name) + ": " + brightRed(k));
     }
-    results$.push(target[k] = v);
+    target[k] = v;
   }
-  return results$;
+  return this;
 }
 Identifier.all = {};
 Identifier.main = {

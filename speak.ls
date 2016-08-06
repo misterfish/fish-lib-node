@@ -125,6 +125,7 @@ function info
     console.log.apply console, prnt
     void
 
+# --- returns `this` for convenient chaining.
 function bullet-set arg
     if types.is-obj (opts = arg)
         if opts.str?
@@ -139,6 +140,7 @@ function bullet-set arg
             our.bullet.indent = s
     else
         our.bullet.str = arg
+    @
 
 function bullet-get val
     squeak.aerror 'no such bullet property' bright-red val unless our.bullet.has-own-property val

@@ -275,11 +275,15 @@ function init { pkg = {}, } = {}
     our.pkg <<< pkg
 
 # --- @dies.
+#
+# returns `this` for convenient chaining.
+
 function sys-set opts
     our.pkg.conf-set do
         source: opts
         target: our.opts
         name: 'sys'
+    @
 
 function sys-get key
     return complain 'No such key' speak.bright-red key unless our.opts.has-own-property key

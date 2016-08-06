@@ -47,11 +47,12 @@ function init(arg$){
   return import$(our.pkg, pkg);
 }
 function sysSet(opts){
-  return our.pkg.confSet({
+  our.pkg.confSet({
     source: opts,
     target: our.opts,
     name: 'sys'
   });
+  return this;
 }
 function sysGet(key){
   if (!our.opts.hasOwnProperty(key)) {
@@ -67,8 +68,12 @@ function shellQuote(arg){
   return arg;
 }
 function sysOk(){
-  var args, onxxx, onok, onnotok, opts;
-  args = slice$.call(arguments);
+  var args, res$, i$, to$, onxxx, onok, onnotok, opts;
+  res$ = [];
+  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  args = res$;
   onxxx = args.pop();
   if (!types.isFunc(onxxx)) {
     squeak.aerror('bad call');
@@ -105,15 +110,23 @@ function sysOk(){
   return sys.apply(this, args);
 }
 function sysExec(){
-  var args, opts;
-  args = slice$.call(arguments);
+  var args, res$, i$, to$, opts;
+  res$ = [];
+  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  args = res$;
   args.unshift('exec');
   opts = sysProcessArgs.apply(null, args);
   return sysdoExec(opts);
 }
 function sysSpawn(){
-  var args, opts;
-  args = slice$.call(arguments);
+  var args, res$, i$, to$, opts;
+  res$ = [];
+  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  args = res$;
   args.unshift('spawn');
   opts = sysProcessArgs.apply(null, args);
   return sysdoSpawn(opts);
@@ -647,8 +660,12 @@ function syserror(arg$){
   }
 }
 function sysProcessArgs(){
-  var argsArray, type, numArgs, opts, cmd, args, oncomplete, lastArg, lastArg2, x$;
-  argsArray = slice$.call(arguments);
+  var argsArray, res$, i$, to$, type, numArgs, opts, cmd, args, oncomplete, lastArg, lastArg2, x$;
+  res$ = [];
+  for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+    res$.push(arguments[i$]);
+  }
+  argsArray = res$;
   type = argsArray.shift();
   if (type !== 'exec' && type !== 'spawn') {
     squeak.aerror();

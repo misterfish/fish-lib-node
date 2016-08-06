@@ -177,11 +177,13 @@ function init { pkg = {}, } = {}
     # --- clone args; noop if []
     our.pkg <<< pkg
 
+# --- returns `this` for convenient chaining.
 function squeak-set opts
     our.pkg.conf-set do
         source: opts
         target: our.opts
         name: 'err'
+    @
 
 function squeak-get key
     return complain 'No such key' speak.bright-red key unless our.opts.has-own-property key

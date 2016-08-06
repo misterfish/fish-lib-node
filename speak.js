@@ -138,11 +138,12 @@ function bulletSet(arg){
       if (!types.isNum(s)) {
         return squeak.iwarn('bad indent');
       }
-      return our.bullet.indent = s;
+      our.bullet.indent = s;
     }
   } else {
-    return our.bullet.str = arg;
+    our.bullet.str = arg;
   }
+  return this;
 }
 function bulletGet(val){
   if (!our.bullet.hasOwnProperty(val)) {
