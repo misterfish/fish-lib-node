@@ -14,7 +14,7 @@ sprintf = require 'sprintf'
 
 { ok, defined, of-number, of-object, ok-number, is-array, is-object, is-string, is-boolean, is-function, is-integer, is-integer-strict, is-number, is-number-strict, is-integer-positive, is-integer-positive-strict, is-integer-non-negative, is-integer-non-negative-strict, is-buffer, of-num, of-obj, ok-num, is-arr, is-obj, is-str, is-bool, is-func, is-int, is-int-strict, is-num, is-num-strict, is-int-pos, is-int-pos-strict, is-int-non-neg, is-int-non-neg-strict, is-buf, } = types = require './types'
 
-{ shuffle-array, merge-objects, ord, chr, range, times, array, to-array, flat-array, } = util = require './util'
+{ shuffle-array, ord, chr, range, times, array, to-array, flat-array, } = util = require './util'
 
 if not is-phantom()
     { getopt, } = opt = require './opt'
@@ -114,7 +114,7 @@ Identifier.sys = {
 }
 
 Identifier.util = {
-    shuffle-array, merge-objects, ord, chr, range, times, array, to-array, flat-array,
+    shuffle-array, ord, chr, range, times, array, to-array, flat-array,
 }
 
 <[ main speak squeak color util types sys ]> .for-each ->
