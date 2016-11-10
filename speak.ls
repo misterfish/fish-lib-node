@@ -50,8 +50,8 @@ config =
     bullets:
         ghost: '꣐'
         star: '٭'
-        bass-clef: '𝄢'
-        parallel-lines: '𝄓'
+        'bass-clef': '𝄢'
+        'parallel-lines': '𝄓'
         ypsili: '𝁐'
         straggismata: '𝁄'
         petasti: '𝁉'
