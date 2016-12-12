@@ -297,7 +297,7 @@ function sys-get key
 # the characters.
 
 function shell-quote arg
-    if arg == // [ ; ! $ & * ? ( ) ` < > | \s ] //
+    if arg == // [ ' " ; ! $ & * ? ( ) ` < > | \s ] //
         arg .= replace // ' //g, "'\\''"
         return "'#arg'"
     arg

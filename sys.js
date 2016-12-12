@@ -61,7 +61,7 @@ function sysGet(key){
   return our.opts[key];
 }
 function shellQuote(arg){
-  if (/[;!$&*?()`<>|\s]/.exec(arg)) {
+  if (/['";!$&*?()`<>|\s]/.exec(arg)) {
     arg = arg.replace(/'/g, "'\\''");
     return "'" + arg + "'";
   }
