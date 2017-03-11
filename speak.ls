@@ -185,9 +185,11 @@ function bright-magenta
 
 function disable-colors
     our.colors.disable = true
+    @
 
 function force-colors
     our.colors.force = true
+    @
 
 # --- @private
 function is-tty
