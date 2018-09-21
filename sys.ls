@@ -22,11 +22,11 @@
 # (in the opts argument) or globally (using sys-set()).
 #
 # command strings and elements of [args] are joined on ' '.
-# 
+#
 # quoting is handled very differently in the two cases (see below).
 #
 # the ChildProcess object is returned in all asynchronous cases and the
-# caller can do what they want with it. 
+# caller can do what they want with it.
 #
 # in the synchronous cases there is no ChildProcess object and the options
 # for fine-tuning are somewhat more limited.
@@ -57,7 +57,7 @@
 #
 # and it's also difficult to know when a command fails (see the second
 # example below).
-# 
+#
 # --------- examples:
 #
 # sys-exec 'ls', (shell-quote source-file), '| wc >', (shell-quote out-file)
@@ -69,7 +69,7 @@
 #
 # sys-exec 'wcabc | wc' will print an error to stderr in the default case
 # but will return a zero code.
-# 
+#
 # ------ sys-spawn:
 #
 # is more powerful and robust, and node won't kill the child process.
@@ -83,7 +83,7 @@
 # (shell-quoted).
 #
 # --------- examples:
-# 
+#
 # sys-spawn 'ls' file-one, file-two, file-three
 #
 # JS: sysSpawn('ls', fileOne, fileTwo, fileThree))
@@ -97,7 +97,7 @@
 # -> ditto.
 #
 # ------ options (both exec and spawn):
-# 
+#
 # if opt 'sync' is false, calls will be asynchronous.
 #
 # oncomplete is for both success and error, and is called as:
@@ -127,7 +127,7 @@
 #
 # ------ stream handling:
 #
-# if out-ignore or err-ignore is true: 
+# if out-ignore or err-ignore is true:
 #
 #   exec sync, spawn sync: those streams are not listened on.
 #   exec async: these flags don't do anything.
@@ -173,7 +173,7 @@
 #
 # ------ tip, exec:
 #
-# invocation-opts.max-buffer (bytes): 
+# invocation-opts.max-buffer (bytes):
 #   node will kill the child process if stdout or stderr exceeds this size.
 #   default: not set, meaning use node's default (currently 200K).
 
@@ -189,8 +189,10 @@ export
 
 child-process = require 'child_process'
 
-{ last, keys, join, map, compact, } = require "prelude-ls"
+{ last, keys, join, map, compact, filter, } = require "prelude-ls"
 sprintf = require 'sprintf'
+
+compact-ok = filter (?)
 
 # main = if is-phantom() then global.main else require.main
 # { } = main.exports
@@ -224,7 +226,7 @@ our =
         # sys-exec().
         type: 'exec'
 
-        # --- whether or not to exit. 
+        # --- whether or not to exit.
         die: false
 
         # --- log the command being executed to the console.
@@ -310,8 +312,8 @@ function shell-quote arg
 # sys-ok <pass-through>, ok-callback, notok-callback    (2)
 #
 # all args but 'ok-callback' and 'notok-callback' are simply passed through
-# to sys. 
-# 
+# to sys.
+#
 # out and err are ignored and that can't be changed by the caller -- the
 # rationale is to keep this function simple and have them use sys-exec or
 # sys-spawn for more complex things.
@@ -799,12 +801,12 @@ function sysdo-spawn-async opts
 
     # --- error processing.
     #
-    # in the case of an error event, we won't have code or signal. 
+    # in the case of an error event, we won't have code or signal.
     #
     # e.g.: /nonexistent/cmd
     #
     # the 'exit' signal might also fire, in which case, do nothing.
-    # 
+    #
     # in the case of exit, we will have code and signal, and err/out
     # streams have already been captured if applicable.
     #
@@ -825,7 +827,7 @@ function sysdo-spawn-async opts
     # not fired if killed by a signal.
     #
     # ondata events of stderr/stdout might not have fired yet (and
-    # probably never will). 
+    # probably never will).
 
     spawned.on 'error' (errobj) ->
         # --- note, if you're looking for something like 'bash: finderjsdf: command
@@ -1006,7 +1008,7 @@ function sys-process-args ...args-array
     else
         squeak.aerror()
 
-    if opts.args then opts.args = compact opts.args.map ->
+    if opts.args then opts.args = compact-ok opts.args.map ->
         if not it?
             squeak.warn "Skipping null/undefined arg (check args array)"
         it
@@ -1077,7 +1079,7 @@ function handle-stream-data-as-list stream-data, stream-config, string
                 # --- eat it and add it to prev
                 stream[stream.length - 1] += split.shift()
 
-        # --- last read did end on \n. 
+        # --- last read did end on \n.
         #
         # get rid of the '', regardless of whether cur read begins with
         # newline.
