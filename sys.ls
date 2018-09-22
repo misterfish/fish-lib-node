@@ -1008,11 +1008,6 @@ function sys-process-args ...args-array
     else
         squeak.aerror()
 
-    if opts.args then opts.args = compact-ok opts.args.map ->
-        if not it?
-            squeak.warn "Skipping null/undefined arg (check args array)"
-        it
-
     opts
         ..type = type
 

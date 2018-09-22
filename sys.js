@@ -761,14 +761,6 @@
     } else {
       squeak.aerror();
     }
-    if (opts.args) {
-      opts.args = compactOk(opts.args.map(function(it){
-        if (it == null) {
-          squeak.warn("Skipping null/undefined arg (check args array)");
-        }
-        return it;
-      }));
-    }
     x$ = opts;
     x$.type = type;
     return x$;
