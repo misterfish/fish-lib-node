@@ -1,0 +1,6 @@
+[submodule "libs/alleycat-js"]
+	path = libs/alleycat-js
+	url = https://gitlab.com/alleycatcc/alleycat-js
+[submodule "libs/alleycat-bash"]
+	path = libs/alleycat-bash
+	url = https://gitlab.com/alleycatcc/alleycat-bash

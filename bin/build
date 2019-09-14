@@ -5,10 +5,12 @@ set -o pipefail
 
 bindir=$(realpath "$(dirname "$0")")
 rootdir="$bindir"/..
-jasminecmd="$bindir"/jasmine
+specdir="$rootdir"/spec
+nodemodulesbindir="$rootdir"/node_modules/.bin
+lsccmd="$nodemodulesbindir"/lsc
 
 . "$bindir"/functions.bash
 
 USAGE="Usage: $0"
 
-cwd "$rootdir" cmd "$jasminecmd"
+cmd "$lsccmd" -c "$specdir"/*.ls "$rootdir"/*.ls
