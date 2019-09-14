@@ -1,7 +1,7 @@
 {
   "name": "fish-lib",
   "version": "0.9.13",
-  "description": "Util libraries for Node.js",
+  "description": "Utility libraries for Node.js",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -15,10 +15,10 @@
   "dependencies": {
     "nopt": "^3.0.3",
     "prelude-ls": "^1.1.2",
-    "sprintf": "^0.1.5"
+    "sprintf-js": "^1.1.2"
   },
   "devDependencies": {
-    "livescript": "^1.4.0",
-    "jasmine": "^2.3.2"
+    "jasmine": "^2.3.2",
+    "livescript": "^1.4.0"
   }
 }
