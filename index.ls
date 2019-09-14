@@ -5,7 +5,7 @@
 # Author: Allen Haim <allen@netherrealm.net>
 
 { curry, join, last, map, each, compact, keys, values, } = require 'prelude-ls'
-sprintf = require 'sprintf'
+{ sprintf, } = require 'sprintf-js'
 
 { sys-get, sys-set, sys-ok, sys-exec, sys-spawn, sys, shell-quote, } = sys-mod = require './sys'
 { bullet, bullet-set, bullet-get, log, info, green, bright-green, blue, bright-blue, red, bright-red, yellow, bright-yellow, cyan, bright-cyan, magenta, bright-magenta, disable-colors, force-colors, } = speak = require './speak'

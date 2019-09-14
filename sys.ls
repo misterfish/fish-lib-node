@@ -190,7 +190,7 @@ export
 child-process = require 'child_process'
 
 { last, keys, join, map, compact, filter, } = require "prelude-ls"
-sprintf = require 'sprintf'
+{ sprintf, } = require 'sprintf-js'
 
 compact-ok = filter (?)
 

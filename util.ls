@@ -7,6 +7,8 @@ export
     to-array
     flat-array
 
+{ sprintf, } = require 'sprintf-js'
+
 # --- is-int-pos, is-int, is-num, is-str, is-func, is-array,
 types = require './types'
 # --- aerror, warn,

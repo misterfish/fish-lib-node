@@ -11,7 +11,7 @@
   out$.shellQuote = shellQuote;
   childProcess = require('child_process');
   ref$ = require("prelude-ls"), last = ref$.last, keys = ref$.keys, join = ref$.join, map = ref$.map, compact = ref$.compact, filter = ref$.filter;
-  sprintf = require('sprintf');
+  sprintf = require('sprintf-js').sprintf;
   compactOk = filter(function(it){
     return it != null;
   });

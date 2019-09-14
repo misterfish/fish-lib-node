@@ -1,7 +1,7 @@
 fs = require 'fs'
 path = require 'path'
 
-sprintf = require 'sprintf'
+{ sprintf, } = require 'sprintf-js'
 
 { split, } = require 'prelude-ls'
 
