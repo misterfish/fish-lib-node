@@ -18,7 +18,7 @@ describe 'Squeak' ->
         after-each ->
             spy-on console, 'warn' .and.call-fake (the-warning) ->
                 expect do-test the-warning .to-equal true
-            tgt.iwarn warning, opts
+            tgt.iwarn-opts opts, warning
             expect console.warn .to-have-been-called()
 
         test 'says "Internal warning"' ->
@@ -51,7 +51,7 @@ describe 'Squeak' ->
         after-each ->
             spy-on console, 'warn' .and.call-fake (the-warning) ->
                 expect do-test the-warning .to-equal true
-            tgt.warn warning, opts
+            tgt.warn-opts opts, warning
             expect console.warn .to-have-been-called()
 
         test 'says "Warning"' ->
@@ -199,7 +199,7 @@ describe 'Squeak' ->
         after-each ->
             spy-on console, 'warn' .and.call-fake (the-warning) ->
                 expect do-test the-warning .to-equal true
-            tgt.ierror warning, opts
+            tgt.ierror-opts opts, warning
             expect console.warn .to-have-been-called()
             expect process.exit .to-have-been-called()
 
@@ -236,7 +236,7 @@ describe 'Squeak' ->
         after-each ->
             spy-on console, 'warn' .and.call-fake (the-warning) ->
                 expect do-test the-warning .to-equal true
-            tgt.error warning, opts
+            tgt.error-opts opts, warning
             expect console.warn .to-have-been-called()
             expect process.exit .to-have-been-called()
 
@@ -267,7 +267,7 @@ describe 'Squeak' ->
             # --- silence console.
             spy-on console, 'warn'
             spy-on process, 'exit'
-            tgt.error '' code: 42
+            tgt.error-opts code: 42, ''
             expect process.exit .to-have-been-called-with 42
 
     describe 'aerror' ->
@@ -281,7 +281,7 @@ describe 'Squeak' ->
         after-each ->
             spy-on console, 'warn' .and.call-fake (the-warning) ->
                 expect do-test the-warning .to-equal true
-            tgt.aerror warning, opts
+            tgt.aerror-opts opts, warning
             expect console.warn .to-have-been-called()
             expect process.exit .to-have-been-called()
 

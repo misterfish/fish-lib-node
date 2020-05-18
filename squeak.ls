@@ -4,10 +4,15 @@ export
     icomplain
     complain
     iwarn
+    iwarn-opts
     ierror
+    ierror-opts
     warn
+    warn-opts
     error
+    error-opts
     aerror
+    aerror-opts
 
 { last, join, map, } = require "prelude-ls"
 
@@ -86,13 +91,14 @@ our =
 #
 # stack-rewind is set to 2 ( HERE>> function -> icomplain -> ierror/iwarn)
 
-function icomplain ...msg
-    opts = last msg
-    if types.is-obj opts then msg.pop() else opts = {}
+function icomplain-opts opts, ...msg
     func = if our.opts.complain is 'error' then ierror else iwarn
     opts.stack-rewind ?= 0
     opts.stack-rewind += 2
     func.apply null msg ++ [opts]
+
+function icomplain ...msg
+    icomplain-opts {}, ...msg
 
 # --- checks our.opts.fatal and routes through either error or warn.
 #
@@ -100,78 +106,79 @@ function icomplain ...msg
 #
 # stack-rewind is set to 2 by default ( HERE>> function -> icomplain -> ierror/iwarn)
 
-function complain ...msg
-    opts = last msg
-    if types.is-obj opts then msg.pop() else opts = {}
+function complain-opts opts, ...msg
     func = if our.opts.complain is 'error' then error else warn
     opts.stack-rewind ?= 0
     opts.stack-rewind += 2
     func.apply null msg ++ [opts]
 
+function complain ...msg
+    complain-opts {}, ...msg
+
 # --- programmer warnings.
 #
 # usage: iwarn 'string' [, 'string', ...], opts = {}
 
-function iwarn ...args
-    opts = last args
-    if types.is-obj opts then args.pop() else opts = {}
-
+function iwarn-opts opts, ...args
     pcomplain opts <<<
         msg: args
         type: 'iwarn'
         internal: true
 
+function iwarn ...args
+    iwarn-opts {}, ...args
+
 # --- programmer errors.
 #
 # usage: ierror 'string' [, 'string', ...], opts = {}
 
-function ierror ...args
-    opts = last args
-    if types.is-obj opts then args.pop() else opts = {}
-
+function ierror-opts opts, ...args
     pcomplain opts <<<
         msg: args
         type: 'ierror'
         internal: true
 
+function ierror ...args
+    ierror-opts {}, ...args
+
 # --- user/system warnings.
 #
 # usage: warn 'string' [, 'string', ...], opts = {}
 
-function warn ...args
-    opts = last args
-    if types.is-obj opts then args.pop() else opts = {}
-
+function warn-opts opts, ...args
     pcomplain opts <<<
         msg: args
         type: 'warn'
         internal: false
 
+function warn ...args
+    warn-opts {}, ...args
+
 # --- user/system errors.
 #
 # usage: error 'string' [, 'string', ...], opts = {}
 
-function error ...args
-    opts = last args
-    if types.is-obj opts then args.pop() else opts = {}
-
+function error-opts opts, ...args
     pcomplain opts <<<
         msg: args
         type: 'error'
         internal: false
 
+function error ...args
+    error-opts {}, ...args
+
 # --- api errors.
 #
 # usage: aerror 'string' [, 'string', ...], opts = {}
 
-function aerror ...args
-    opts = last args
-    if types.is-obj opts then args.pop() else opts = {}
-
+function aerror-opts opts, ...args
     pcomplain opts <<<
         msg: args
         type: 'aerror'
         internal: false
+
+function aerror ...args
+    aerror-opts {}, ...args
 
 function init { pkg = {}, } = {}
     # --- clone args; noop if []

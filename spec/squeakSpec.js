@@ -20,7 +20,7 @@
         spyOn(console, 'warn').and.callFake(function(theWarning){
           return expect(doTest(theWarning)).toEqual(true);
         });
-        tgt.iwarn(warning, opts);
+        tgt.iwarnOpts(opts, warning);
         return expect(console.warn).toHaveBeenCalled();
       });
       test('says "Internal warning"', function(){
@@ -68,7 +68,7 @@
         spyOn(console, 'warn').and.callFake(function(theWarning){
           return expect(doTest(theWarning)).toEqual(true);
         });
-        tgt.warn(warning, opts);
+        tgt.warnOpts(opts, warning);
         return expect(console.warn).toHaveBeenCalled();
       });
       test('says "Warning"', function(){
@@ -291,7 +291,7 @@
         spyOn(console, 'warn').and.callFake(function(theWarning){
           return expect(doTest(theWarning)).toEqual(true);
         });
-        tgt.ierror(warning, opts);
+        tgt.ierrorOpts(opts, warning);
         expect(console.warn).toHaveBeenCalled();
         return expect(process.exit).toHaveBeenCalled();
       });
@@ -343,7 +343,7 @@
         spyOn(console, 'warn').and.callFake(function(theWarning){
           return expect(doTest(theWarning)).toEqual(true);
         });
-        tgt.error(warning, opts);
+        tgt.errorOpts(opts, warning);
         expect(console.warn).toHaveBeenCalled();
         return expect(process.exit).toHaveBeenCalled();
       });
@@ -387,9 +387,9 @@
       return test('code 42', function(){
         spyOn(console, 'warn');
         spyOn(process, 'exit');
-        tgt.error('', {
+        tgt.errorOpts({
           code: 42
-        });
+        }, '');
         return expect(process.exit).toHaveBeenCalledWith(42);
       });
     });
@@ -405,7 +405,7 @@
         spyOn(console, 'warn').and.callFake(function(theWarning){
           return expect(doTest(theWarning)).toEqual(true);
         });
-        tgt.aerror(warning, opts);
+        tgt.aerrorOpts(opts, warning);
         expect(console.warn).toHaveBeenCalled();
         return expect(process.exit).toHaveBeenCalled();
       });
