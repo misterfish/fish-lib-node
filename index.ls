@@ -8,11 +8,12 @@
 { sprintf, } = require 'sprintf-js'
 
 { sys-get, sys-set, sys-ok, sys-exec, sys-spawn, sys, shell-quote, } = sys-mod = require './sys'
-{ bullet, bullet-set, bullet-get, log, info, green, bright-green, blue, bright-blue, red, bright-red, yellow, bright-yellow, cyan, bright-cyan, magenta, bright-magenta, disable-colors, force-colors, } = speak = require './speak'
+{ bullet, bullet-set, bullet-get, log, info, info-str, green, bright-green, blue, bright-blue, red, bright-red, yellow, bright-yellow, cyan, bright-cyan, magenta, bright-magenta, disable-colors, force-colors, } = speak = require './speak'
 
 {
     squeak-set, squeak-get,
-    icomplain, complain, iwarn, ierror, warn, error, aerror,
+    icomplain, complain, aerror,
+    iwarn, iwarn-str, ierror, ierror-str, warn, warn-str, error, error-str,
     icomplain-opts, complain-opts, iwarn-opts, ierror-opts, warn-opts, error-opts, aerror-opts,
 } = squeak = require './squeak'
 
@@ -93,13 +94,15 @@ Identifier.main = {
 }
 
 Identifier.speak = {
-    bullet, bullet-set, bullet-get, log, info, green, bright-green,
+    bullet, bullet-set, bullet-get, log, info, info-str, green, bright-green,
     blue, bright-blue, red, bright-red, yellow, bright-yellow,
     cyan, bright-cyan, magenta, bright-magenta,
 }
 
 Identifier.squeak = {
-    icomplain, complain, iwarn, ierror, warn, error, aerror, squeak-set, squeak-get,
+    icomplain, complain, aerror,
+    iwarn, iwarn-str, ierror, ierror-str, warn, warn-str, error, error-str,
+    squeak-set, squeak-get,
     icomplain-opts, complain-opts, iwarn-opts, ierror-opts, warn-opts, error-opts, aerror-opts,
 }
 

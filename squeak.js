@@ -7,12 +7,16 @@
   out$.complain = complain;
   out$.iwarn = iwarn;
   out$.iwarnOpts = iwarnOpts;
+  out$.iwarnStr = iwarnStr;
   out$.ierror = ierror;
   out$.ierrorOpts = ierrorOpts;
+  out$.ierrorStr = ierrorStr;
   out$.warn = warn;
   out$.warnOpts = warnOpts;
+  out$.warnStr = warnStr;
   out$.error = error;
   out$.errorOpts = errorOpts;
+  out$.errorStr = errorStr;
   out$.aerror = aerror;
   out$.aerrorOpts = aerrorOpts;
   ref$ = require("prelude-ls"), last = ref$.last, join = ref$.join, map = ref$.map;
@@ -73,6 +77,13 @@
     msg = res$;
     return complainOpts.apply(null, [{}].concat(arrayFrom$(msg)));
   }
+  function iwarnOptsOpts(msg){
+    return {
+      msg: msg,
+      type: 'iwarn',
+      internal: true
+    };
+  }
   function iwarnOpts(opts){
     var args, res$, i$, to$;
     res$ = [];
@@ -80,7 +91,16 @@
       res$.push(arguments[i$]);
     }
     args = res$;
-    return pcomplain((opts.msg = args, opts.type = 'iwarn', opts.internal = true, opts));
+    return pcomplain(import$(opts, iwarnOptsOpts(args)));
+  }
+  function iwarnStr(){
+    var args, res$, i$, to$;
+    res$ = [];
+    for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+      res$.push(arguments[i$]);
+    }
+    args = res$;
+    return pcomplainStr(iwarnOptsOpts(args));
   }
   function iwarn(){
     var args, res$, i$, to$;
@@ -91,6 +111,13 @@
     args = res$;
     return iwarnOpts.apply(null, [{}].concat(arrayFrom$(args)));
   }
+  function ierrorOptsOpts(msg){
+    return {
+      msg: msg,
+      type: 'ierror',
+      internal: true
+    };
+  }
   function ierrorOpts(opts){
     var args, res$, i$, to$;
     res$ = [];
@@ -98,7 +125,16 @@
       res$.push(arguments[i$]);
     }
     args = res$;
-    return pcomplain((opts.msg = args, opts.type = 'ierror', opts.internal = true, opts));
+    return pcomplain(import$(opts, ierrorOptsOpts(args)));
+  }
+  function ierrorStr(){
+    var args, res$, i$, to$;
+    res$ = [];
+    for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+      res$.push(arguments[i$]);
+    }
+    args = res$;
+    return pcomplainStr(ierrorOptsOpts(args));
   }
   function ierror(){
     var args, res$, i$, to$;
@@ -109,6 +145,13 @@
     args = res$;
     return ierrorOpts.apply(null, [{}].concat(arrayFrom$(args)));
   }
+  function warnOptsOpts(msg){
+    return {
+      msg: msg,
+      type: 'warn',
+      internal: false
+    };
+  }
   function warnOpts(opts){
     var args, res$, i$, to$;
     res$ = [];
@@ -116,7 +159,16 @@
       res$.push(arguments[i$]);
     }
     args = res$;
-    return pcomplain((opts.msg = args, opts.type = 'warn', opts.internal = false, opts));
+    return pcomplain(import$(opts, warnOptsOpts(args)));
+  }
+  function warnStr(){
+    var args, res$, i$, to$;
+    res$ = [];
+    for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+      res$.push(arguments[i$]);
+    }
+    args = res$;
+    return pcomplainStr(warnOptsOpts(args));
   }
   function warn(){
     var args, res$, i$, to$;
@@ -127,6 +179,13 @@
     args = res$;
     return warnOpts.apply(null, [{}].concat(arrayFrom$(args)));
   }
+  function errorOptsOpts(msg){
+    return {
+      msg: msg,
+      type: 'error',
+      internal: false
+    };
+  }
   function errorOpts(opts){
     var args, res$, i$, to$;
     res$ = [];
@@ -134,7 +193,16 @@
       res$.push(arguments[i$]);
     }
     args = res$;
-    return pcomplain((opts.msg = args, opts.type = 'error', opts.internal = false, opts));
+    return pcomplain(import$(opts, errorOptsOpts(args)));
+  }
+  function errorStr(){
+    var args, res$, i$, to$;
+    res$ = [];
+    for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+      res$.push(arguments[i$]);
+    }
+    args = res$;
+    return pcomplainStr(errorOptsOpts(args));
   }
   function error(){
     var args, res$, i$, to$;
@@ -187,6 +255,23 @@
     return our.opts[key];
   }
   function pcomplain(opts){
+    var ref$, msgStr, msgMainStr, code, allow, throws;
+    ref$ = pcomplainProcess(opts), msgStr = ref$[0], msgMainStr = ref$[1], code = ref$[2], allow = ref$[3], throws = ref$[4];
+    if (throws) {
+      throw new Error(msgMainStr);
+    }
+    console.warn(msgStr);
+    if (!allow) {
+      code == null && (code = 1);
+      process.exit(code);
+    }
+  }
+  function pcomplainStr(opts){
+    var ref$, msgStr, _;
+    ref$ = pcomplainProcess(opts), msgStr = ref$[0], _ = slice$.call(ref$, 1);
+    return msgStr;
+  }
+  function pcomplainProcess(opts){
     var msg, type, internal, code, stackRewind, ref$, errorType, apiErrorType, printStackTraceOpt, msgBegin, msgMain, msgEnd, printFileAndLine, printStackTrace, allow, throws, that, bulletColor, stack, funcname, filename, lineNum, msgBeginStr, msgMainStr, msgEndStr, msgStr;
     msg = opts.msg, type = opts.type, internal = opts.internal, code = opts.code, stackRewind = (ref$ = opts.stackRewind) != null ? ref$ : 0;
     errorType = (ref$ = opts.error) != null
@@ -214,9 +299,6 @@
           }).join(' ');
         }
       };
-    }
-    if (!types.isArr(msg)) {
-      return iwarn('bad param msg');
     }
     msg = map(function(it){
       if (types.isObj(it)) {
@@ -346,14 +428,7 @@
     msgMainStr = join(' ', msgMain);
     msgEndStr = join(' ', msgEnd);
     msgStr = join(' ', util.array(msgBeginStr, msgMainStr, msgEndStr));
-    if (throws) {
-      throw new Error(msgMainStr);
-    }
-    console.warn(msgStr);
-    if (!allow) {
-      code == null && (code = 1);
-      process.exit(code);
-    }
+    return [msgStr, msgMainStr, code, allow, throws];
   }
   function getStack(stackRewind){
     var stack, ref$, funcname, filename, lineNum;

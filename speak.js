@@ -6,6 +6,7 @@
   out$.bullet = bullet;
   out$.log = log;
   out$.info = info;
+  out$.infoStr = infoStr;
   out$.disableColors = disableColors;
   out$.forceColors = forceColors;
   out$.green = green;
@@ -98,6 +99,7 @@
     return '[' + col + 'm';
   }
   function log(){
+    console.log('hello');
     return bind$(console, 'log').apply(this, arguments);
   }
   function bullet(){
@@ -110,17 +112,32 @@
     }
     return our.bullet.vals[Math.floor(Math.random() * our.bullet.vals.length)];
   }
-  function info(){
-    var prnt, ind, spa, bul;
-    if (!arguments.length) {
-      return;
+  function infoStr(){
+    var args, res$, i$, to$, prnt, ind, spa, bul;
+    res$ = [];
+    for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+      res$.push(arguments[i$]);
     }
-    prnt = [].slice.call(arguments);
+    args = res$;
+    prnt = args;
     ind = repeatString$(' ', our.bullet.indent);
     spa = repeatString$(' ', our.bullet.spacing);
     bul = blue(bullet());
     prnt[0] = ind + bul + spa + prnt[0];
-    console.log.apply(console, prnt);
+    return join(' ')(
+    prnt);
+  }
+  function info(){
+    var args, res$, i$, to$;
+    res$ = [];
+    for (i$ = 0, to$ = arguments.length; i$ < to$; ++i$) {
+      res$.push(arguments[i$]);
+    }
+    args = res$;
+    if (!args.length) {
+      return;
+    }
+    return console.log(infoStr.apply(null, args));
   }
   function bulletSet(arg){
     var opts, that, ref$, s;

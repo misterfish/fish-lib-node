@@ -5,12 +5,16 @@ export
     complain
     iwarn
     iwarn-opts
+    iwarn-str
     ierror
     ierror-opts
+    ierror-str
     warn
     warn-opts
+    warn-str
     error
     error-opts
+    error-str
     aerror
     aerror-opts
 
@@ -119,11 +123,16 @@ function complain ...msg
 #
 # usage: iwarn 'string' [, 'string', ...], opts = {}
 
+function iwarn-opts-opts msg
+    msg: msg
+    type: 'iwarn'
+    internal: true
+
 function iwarn-opts opts, ...args
-    pcomplain opts <<<
-        msg: args
-        type: 'iwarn'
-        internal: true
+    pcomplain opts <<< iwarn-opts-opts args
+
+function iwarn-str ...args
+    pcomplain-str (iwarn-opts-opts args)
 
 function iwarn ...args
     iwarn-opts {}, ...args
@@ -132,11 +141,16 @@ function iwarn ...args
 #
 # usage: ierror 'string' [, 'string', ...], opts = {}
 
+function ierror-opts-opts msg
+    msg: msg
+    type: 'ierror'
+    internal: true
+
 function ierror-opts opts, ...args
-    pcomplain opts <<<
-        msg: args
-        type: 'ierror'
-        internal: true
+    pcomplain opts <<< ierror-opts-opts args
+
+function ierror-str ...args
+    pcomplain-str (ierror-opts-opts args)
 
 function ierror ...args
     ierror-opts {}, ...args
@@ -145,11 +159,16 @@ function ierror ...args
 #
 # usage: warn 'string' [, 'string', ...], opts = {}
 
+function warn-opts-opts msg
+    msg: msg
+    type: 'warn'
+    internal: false
+
 function warn-opts opts, ...args
-    pcomplain opts <<<
-        msg: args
-        type: 'warn'
-        internal: false
+    pcomplain opts <<< warn-opts-opts args
+
+function warn-str ...args
+    pcomplain-str (warn-opts-opts args)
 
 function warn ...args
     warn-opts {}, ...args
@@ -158,11 +177,16 @@ function warn ...args
 #
 # usage: error 'string' [, 'string', ...], opts = {}
 
+function error-opts-opts msg
+    msg: msg
+    type: 'error'
+    internal: false
+
 function error-opts opts, ...args
-    pcomplain opts <<<
-        msg: args
-        type: 'error'
-        internal: false
+    pcomplain opts <<< error-opts-opts args
+
+function error-str ...args
+    pcomplain-str (error-opts-opts args)
 
 function error ...args
     error-opts {}, ...args
@@ -201,6 +225,25 @@ function squeak-get key
 # @private
 
 function pcomplain opts
+    [msg-str, msg-main-str, code, allow, throws] = pcomplain-process opts
+
+    if throws
+        throw new Error msg-main-str
+
+    console.warn msg-str
+
+    if not allow
+        code ?= 1
+        process.exit code
+
+    void
+
+function pcomplain-str opts
+    [msg-str, ..._] = pcomplain-process opts
+    msg-str
+
+# --- @private
+function pcomplain-process opts
     { msg, type, internal, code, stack-rewind = 0, } = opts
     error-type = opts.error ? our.opts.error
     api-error-type = opts.api-error ? our.opts.api-error
@@ -220,8 +263,6 @@ function pcomplain opts
                             it
                     .join ' '
 
-    # --- will call pcomplain() again, but won't infinitely loop.
-    return iwarn 'bad param msg' unless types.is-arr msg
 
     msg = map do
         -> if types.is-obj it then node-util.inspect it else it
@@ -329,16 +370,7 @@ function pcomplain opts
         msg-main-str
         msg-end-str
 
-    if throws
-        throw new Error msg-main-str
-
-    console.warn msg-str
-
-    if not allow
-        code ?= 1
-        process.exit code
-
-    void
+    [msg-str, msg-main-str, code, allow, throws]
 
 # --- @private.
 function get-stack stack-rewind

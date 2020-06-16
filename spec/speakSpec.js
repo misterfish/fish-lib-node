@@ -72,7 +72,7 @@
       });
       test('string, string, string', function(){
         tgt.info('abc', 'def', 'ghi');
-        return expect(console.log).toHaveBeenCalledWith(bullet + " abc", "def", "ghi");
+        return expect(console.log).toHaveBeenCalledWith(bullet + " abc def ghi");
       });
       return test('indent, spacing', function(){
         tgt.bulletSet({

@@ -5,6 +5,7 @@ export
 
     log
     info
+    info-str
 
     disable-colors
     force-colors
@@ -107,6 +108,7 @@ function _color c, { warn-on-error = true, } = {}
     '[' + col + 'm'
 
 function log
+    console.log 'hello'
     console~log ...
 
 # --- return our.bullet.str if it's been set, otherwise a random bullet.
@@ -115,15 +117,17 @@ function bullet
     our.bullet.vals := values config.bullets unless our.bullet.vals?
     our.bullet.vals[ Math.floor Math.random() * our.bullet.vals.length ]
 
-function info
-    return unless &.length
-    prnt = [].slice.call &
+function info-str ...args
+    prnt = args
     ind = ' ' * our.bullet.indent
     spa = ' ' * our.bullet.spacing
     bul = blue bullet()
     prnt.0 = ind + bul + spa + prnt.0
-    console.log.apply console, prnt
-    void
+    prnt |> join ' '
+
+function info ...args
+    return unless args.length
+    console.log (info-str ...args)
 
 # --- returns `this` for convenient chaining.
 function bullet-set arg

@@ -56,7 +56,7 @@ describe 'Speak' ->
             expect console.log .to-have-been-called-with "#bullet abc"
         test 'string, string, string' ->
             tgt.info 'abc' 'def' 'ghi'
-            expect console.log .to-have-been-called-with "#bullet abc" "def" "ghi"
+            expect console.log .to-have-been-called-with "#bullet abc def ghi"
         test 'indent, spacing' ->
             tgt.bullet-set do
                 indent: 4
