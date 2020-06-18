@@ -1,6 +1,6 @@
 {
   "name": "fish-lib",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Utility libraries for Node.js",
   "main": "index.js",
   "repository": {
