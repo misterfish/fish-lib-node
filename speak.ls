@@ -108,7 +108,6 @@ function _color c, { warn-on-error = true, } = {}
     '[' + col + 'm'
 
 function log
-    console.log 'hello'
     console~log ...
 
 # --- return our.bullet.str if it's been set, otherwise a random bullet.

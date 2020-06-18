@@ -99,7 +99,6 @@
     return '[' + col + 'm';
   }
   function log(){
-    console.log('hello');
     return bind$(console, 'log').apply(this, arguments);
   }
   function bullet(){
